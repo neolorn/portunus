@@ -23,6 +23,50 @@ internal static class IntermediateLanguage
     internal static IReadOnlyList<EntityHandle> MemberTokens(BlobReader il)
     {
         List<EntityHandle> tokens = [];
+        foreach ((OperandType operand, int value) in Tokens(il))
+        {
+            if (operand is OperandType.InlineMethod or OperandType.InlineField or OperandType.InlineTok)
+            {
+                EntityHandle token = MetadataTokens.EntityHandle(value);
+                if (token.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeReference or HandleKind.TypeSpecification))
+                {
+                    tokens.Add(token);
+                }
+            }
+        }
+
+        return tokens;
+    }
+
+    /// <summary>
+    /// The strings the body's <c>ldstr</c> instructions load, as their tokens on the user string
+    /// heap, each with the method or field the next instruction that names one names, or none.
+    /// </summary>
+    internal static IReadOnlyList<(UserStringHandle String, EntityHandle? Next)> StringTokens(BlobReader il)
+    {
+        List<(OperandType Operand, int Value)> tokens = Tokens(il);
+        List<(UserStringHandle String, EntityHandle? Next)> strings = [];
+        for (int index = 0; index < tokens.Count; index++)
+        {
+            if (tokens[index].Operand != OperandType.InlineString)
+            {
+                continue;
+            }
+
+            EntityHandle? next = tokens.Skip(index + 1)
+                .Where(token => token.Operand is OperandType.InlineMethod or OperandType.InlineField)
+                .Select(token => (EntityHandle?)MetadataTokens.EntityHandle(token.Value))
+                .FirstOrDefault();
+            strings.Add((MetadataTokens.UserStringHandle(tokens[index].Value & 0x00FFFFFF), next));
+        }
+
+        return strings;
+    }
+
+    /// <summary>Each instruction whose operand is a metadata token, with the kind of its operand and the token.</summary>
+    private static List<(OperandType Operand, int Value)> Tokens(BlobReader il)
+    {
+        List<(OperandType Operand, int Value)> tokens = [];
         while (il.RemainingBytes > 0)
         {
             int code = il.ReadByte();
@@ -31,15 +75,11 @@ internal static class IntermediateLanguage
                 code = 0xFE00 | il.ReadByte();
             }
 
-            switch (Operands[code])
+            OperandType operand = Operands[code];
+            switch (operand)
             {
-                case OperandType.InlineMethod or OperandType.InlineField or OperandType.InlineTok:
-                    EntityHandle token = MetadataTokens.EntityHandle(il.ReadInt32());
-                    if (token.Kind is not (HandleKind.TypeDefinition or HandleKind.TypeReference or HandleKind.TypeSpecification))
-                    {
-                        tokens.Add(token);
-                    }
-
+                case OperandType.InlineMethod or OperandType.InlineField or OperandType.InlineTok or OperandType.InlineString:
+                    tokens.Add((operand, il.ReadInt32()));
                     break;
                 case OperandType.InlineSwitch:
                     int targets = il.ReadInt32();

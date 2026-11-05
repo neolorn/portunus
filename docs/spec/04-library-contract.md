@@ -25,7 +25,7 @@ project SHALL reference only what this item allows it.
 | `tests/Portunus.Fakes` | `Portunus.Core` |
 | `tests/Portunus.Agent.Harness` | `Portunus.Agent`, whose internals it sees through `InternalsVisibleTo` (P-027) |
 | Any other test project | Its source project, `Portunus.Testing`, and the test packages of `06` PRT-ENG-009 |
-| The sample host and its test project | The packed packages above, and for its tests the sample host itself and the test packages of `06` PRT-ENG-009 |
+| The sample host and its test project | The packed packages above and the ASP.NET Core shared framework, through the Web SDK (P-040); for its tests the sample host itself and the test packages of `06` PRT-ENG-009, `Microsoft.AspNetCore.Mvc.Testing` among them (P-042) |
 
 Every shipped project references `Microsoft.CodeAnalysis.PublicApiAnalyzers` and every
 packed project `MinVer`, both as build-only references. The packages depend on one

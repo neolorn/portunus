@@ -47,8 +47,8 @@ control SHALL have the test its requirement gives.
 
 **Acceptance criteria**
 1. Every control above that the library itself carries has a test carrying the
-   identifier of the requirement that names it; the deployment's duties are `05`
-   PRT-OPS-003's.
+   identifier of the requirement that names it, save those on the list kept beside the
+   test, each with its reason (P-041); the deployment's duties are `05` PRT-OPS-003's.
 
 ---
 

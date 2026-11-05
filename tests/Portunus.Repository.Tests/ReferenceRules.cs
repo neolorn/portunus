@@ -17,6 +17,9 @@ internal static class ReferenceRules
 
     internal const string MinVer = "MinVer";
 
+    /// <summary>The SDK the sample host is built on, which brings the ASP.NET Core shared framework (P-040).</summary>
+    internal const string WebSdk = "Microsoft.NET.Sdk.Web";
+
     /// <summary>The Microsoft.Extensions abstractions of <c>06</c> PRT-ENG-009, which <c>Portunus</c> may reference.</summary>
     internal static IReadOnlyList<string> HostingAbstractions { get; } =
     [
@@ -39,6 +42,8 @@ internal static class ReferenceRules
 
     /// <summary>The test packages of <c>06</c> PRT-ENG-009.</summary>
     internal static IReadOnlyList<string> TestPackages { get; } = ["xunit.v3"];
+    /// <summary>The test package of <c>06</c> PRT-ENG-009 the sample host's tests alone take, to start it (P-042).</summary>
+    internal static IReadOnlyList<string> SampleTestPackages { get; } = ["Microsoft.AspNetCore.Mvc.Testing"];
 
     /// <summary>The test projects that may also reference <c>Microsoft.Extensions.Hosting</c>, to run a real host (<c>06</c> PRT-ENG-009, P-025, P-039): the client's, the fixed client's and each adapter's.</summary>
     private static readonly IReadOnlyList<string> HostTestProjects =
@@ -80,6 +85,12 @@ internal static class ReferenceRules
         {
             bool shipped = project.RelativePath.StartsWith("src/", StringComparison.Ordinal);
             bool test = project.RelativePath.StartsWith("tests/", StringComparison.Ordinal);
+            if (project.RelativePath.StartsWith("samples/", StringComparison.Ordinal))
+            {
+                violations.AddRange(SampleViolations(project));
+                continue;
+            }
+
             if (!shipped && !test)
             {
                 continue;
@@ -137,6 +148,39 @@ internal static class ReferenceRules
     }
 
     /// <summary>
+    /// Answers each reference of a project of <c>samples/</c> that its row does not allow
+    /// (P-040): the sample host takes the packed packages and the ASP.NET Core shared framework
+    /// through the Web SDK, no other project and no framework by a reference of its own; its
+    /// test project takes the packed packages, the sample host and the test packages, the factory's among them (P-042).
+    /// </summary>
+    private static IEnumerable<string> SampleViolations(ProjectFile project)
+    {
+        bool tests = project.Name.EndsWith(".Tests", StringComparison.Ordinal);
+        IReadOnlyList<string> packages = tests ? [.. Packages.Packed, .. TestPackages, .. SampleTestPackages] : Packages.Packed;
+        string host = tests ? project.Name[..^".Tests".Length] : string.Empty;
+
+        if (!tests && !string.Equals(project.Document.Root!.Attribute("Sdk")?.Value, WebSdk, StringComparison.Ordinal))
+        {
+            yield return $"{project.RelativePath} is not built on {WebSdk}, which PRT-LIB-001 gives the sample host.";
+        }
+
+        foreach (string reference in project.ProjectReferences.Where(reference => !tests || !string.Equals(reference, host, StringComparison.Ordinal)))
+        {
+            yield return $"{project.RelativePath} references the project {reference}, which PRT-LIB-001 does not allow it.";
+        }
+
+        foreach (string package in project.PackageReferences.Select(ProjectFile.Include).Where(package => !packages.Contains(package, StringComparer.Ordinal)))
+        {
+            yield return $"{project.RelativePath} references the package {package}, which PRT-LIB-001 does not allow it.";
+        }
+
+        foreach (string framework in project.FrameworkReferences)
+        {
+            yield return $"{project.RelativePath} references the framework {framework}, which PRT-LIB-001 gives the sample host only through the Web SDK.";
+        }
+    }
+
+    /// <summary>
     /// Answers each item of <c>Directory.Build.props</c> but the CLSCompliant attribute and the
     /// exact-version target's update (<c>06</c> PRT-ENG-011), and each item of
     /// <c>Directory.Packages.props</c> but a <c>PackageVersion</c>, since such an item would reach
@@ -185,7 +229,8 @@ internal static class ReferenceRules
     internal static IReadOnlyList<string> GrantViolations(string root)
     {
         List<string> violations = [];
-        foreach (ProjectFile project in ProjectFile.ReadAll(root))
+        // The sample host and its tests are built only in their gate, from the packed packages (06 PRT-ENG-001).
+        foreach (ProjectFile project in ProjectFile.ReadAll(root).Where(project => !project.RelativePath.StartsWith("samples/", StringComparison.Ordinal)))
         {
             string assembly = Path.Combine(project.Folder, "bin", "Release", "net10.0", project.Name + ".dll");
             if (!File.Exists(assembly))

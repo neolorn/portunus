@@ -14,7 +14,7 @@ public sealed class RepositoryLayoutTests
     private const string Mapping = """<packageSourceMapping><packageSource key="nuget.org"><package pattern="*" /></packageSource><packageSource key="vendor"><package pattern="Janus.*" /><package pattern="Hermes.Core" /><package pattern="Themis.Core" /></packageSource></packageSourceMapping>""";
 
     private static readonly IReadOnlyList<string> RootFiles =
-        ["Portunus.sln", "Directory.Build.props", "Directory.Packages.props", "global.json", ".editorconfig", ".gitignore", "nuget.config", "CHANGELOG.md"];
+        ["Portunus.sln", "Directory.Build.props", "Directory.Packages.props", "global.json", ".editorconfig", ".gitignore", "nuget.config", "CHANGELOG.md", "RELEASE-NOTES.md"];
 
     [Fact]
     public void PRT_ENG_001_AC1_ProjectsFollowTheLayout()
@@ -102,7 +102,7 @@ public sealed class RepositoryLayoutTests
         using RepositoryFixture fixture = new();
         fixture.WriteProject($"src/{part}/{part}.csproj", string.Empty);
         fixture.WriteProject($"tests/{part}.Tests/{part}.Tests.csproj", string.Empty);
-        fixture.WriteSolution([.. ProjectFile.ReadAll(fixture.Root).Select(project => project.RelativePath)]);
+        fixture.WriteSolution([.. ProjectFile.ReadAll(fixture.Root).Select(project => project.RelativePath).Where(path => !path.StartsWith("samples/", StringComparison.Ordinal))]);
 
         Assert.Empty(LayoutRules.ProjectViolations(fixture.Root));
     }
@@ -157,6 +157,30 @@ public sealed class RepositoryLayoutTests
         fixture.Write("src/Portunus.Core/Secret.cs", source);
 
         Assert.Contains("src/Portunus.Core/Secret.cs declares no namespace.", LayoutRules.FolderViolations(fixture.Root));
+    }
+
+    [Fact]
+    public void PRT_ENG_001_AC1_SampleHostsTopLevelProgramIsAccepted()
+    {
+        using RepositoryFixture fixture = new();
+        fixture.Write("samples/Sample/Sample.csproj", "<Project Sdk=\"Microsoft.NET.Sdk.Web\" />");
+        fixture.Write("samples/Sample/Program.cs", "using Sample;\n\nawait Start.RunAsync(args);\n");
+
+        Assert.Empty(LayoutRules.FolderViolations(fixture.Root));
+    }
+
+    [Theory]
+    [InlineData("samples/Sample/Start.cs", "await Start.RunAsync(args);\n", "samples/Sample/Start.cs declares no namespace.")]
+    [InlineData("samples/Sample.Tests/Program.cs", "await Start.RunAsync(args);\n", "samples/Sample.Tests/Program.cs declares no namespace.")]
+    [InlineData("samples/Sample/Program.cs", "namespace Sample;\n\ninternal static class Program;\n", "samples/Sample/Program.cs declares a namespace, though it is the sample host's top-level statements.")]
+    public void PRT_ENG_001_AC1_SampleFileOutsideTheNamespaceRuleIsFound(string path, string source, string expected)
+    {
+        using RepositoryFixture fixture = new();
+        fixture.Write("samples/Sample/Sample.csproj", "<Project Sdk=\"Microsoft.NET.Sdk.Web\" />");
+        fixture.Write("samples/Sample.Tests/Sample.Tests.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+        fixture.Write(path, source);
+
+        Assert.Contains(expected, LayoutRules.FolderViolations(fixture.Root));
     }
 
     [Fact]
@@ -361,7 +385,7 @@ public sealed class RepositoryLayoutTests
     {
         Assert.Empty(LayoutRules.RootFileViolations(
             [
-                .. RootFiles, "RELEASE-NOTES.md", "src/Portunus.Core/Portunus.Core.csproj", "docs/spec/00-overview.md", ".github/workflows/gates.yml",
+                .. RootFiles, "src/Portunus.Core/Portunus.Core.csproj", "docs/spec/00-overview.md", ".github/workflows/gates.yml",
                 "build/gates/run-gates.ps1", "deploy/example.json", "vendor/SHA256SUMS", "samples/Samples.sln",
             ]));
     }
@@ -381,6 +405,7 @@ public sealed class RepositoryLayoutTests
     [InlineData("CHANGELOG.md")]
     [InlineData("nuget.config")]
     [InlineData("Portunus.sln")]
+    [InlineData("RELEASE-NOTES.md")]
     public void PRT_ENG_001_AC1_ListedRootFileMissingIsFound(string missing)
     {
         Assert.Contains($"{missing} is missing from the repository's root.", LayoutRules.RootFileViolations([.. RootFiles.Where(file => !string.Equals(file, missing, StringComparison.Ordinal))]));

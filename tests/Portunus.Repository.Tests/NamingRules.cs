@@ -60,6 +60,18 @@ internal static partial class NamingRules
         }
     }
 
+    /// <summary>Whether <paramref name="text"/> has a code's shape.</summary>
+    internal static bool IsCode(string text)
+    {
+        return CodePattern().IsMatch(text);
+    }
+
+    /// <summary>Whether <paramref name="text"/> has a configuration key's shape.</summary>
+    internal static bool IsKey(string text)
+    {
+        return KeyPattern().IsMatch(text);
+    }
+
     /// <summary>A string of a code's shape: <c>secrets.</c> and lower-case words separated by dots.</summary>
     [GeneratedRegex(@"\Asecrets\.[a-z]+(?:\.[a-z]+)*\z")]
     private static partial Regex CodePattern();

@@ -948,3 +948,73 @@ adapter's call alone. Found at phase 5.
 
 **Propagated to:**
 - `06` PRT-ENG-009 (the hosting row).
+
+## P-040 — The sample host is a web worker with the Hermes adapter
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-LIB-001, PRT-ENG-001
+
+**TL;DR.** The sample host takes the ASP.NET Core shared framework through the Web SDK,
+as the siblings' sample hosts do, and runs as a generic host with a hosted service; it
+registers `AddPortunus` and `AddPortunusHermesSecrets`, reading one secret of its own
+through the client and Hermes's `connection` through Hermes's `ISecretSource`. Found at
+phase 6: none of the packed packages brings the generic host, and the chapter named the
+Themis adapter, whose package is not yet vendored.
+
+- **The framework, not a package.** Every sibling's host runs on the shared framework, so
+  the sample host shows the adapters where they are used, and adds no row to the
+  allow-list.
+- **Hermes, not Themis.** The Hermes adapter is the lightest built one and needs nothing
+  vendored that is not already there; the sample host shows one adapter, and which one is
+  no part of its point. The Janus adapter's closure would make the sample host carry
+  Janus's dependencies for nothing it shows.
+
+*Rejected:*
+- **`Microsoft.Extensions.Hosting` as a package:** a row in the allow-list for a host the
+  siblings run on the framework.
+- **Waiting for the Themis adapter:** holds phase 6 on a file the sample host does not
+  need.
+
+**Propagated to:**
+- `04` PRT-LIB-001 (the sample host's row); `06` PRT-ENG-001 (the sample host).
+
+## P-041 — Which controls the threat test reads
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-THR-001
+
+**TL;DR.** PRT-THR-001 criterion 1's test reads every requirement its table names, and
+finds a test carrying each identifier, save those on a list kept beside the test, each
+with its reason: PRT-ENG-012 (the pipeline's own run), PRT-OPS-005 (checked by the
+integration tests' run), PRT-THR-003 (checked in review), PRT-OPS-002 and PRT-PSH-001
+(no criteria of their own), and PRT-ENG-005 (proven by PRT-AGT-001 criterion 3's tests).
+A requirement added to the table is read unless it joins the list, which the review
+checks. Found at phase 6.
+
+**Propagated to:**
+- `08` PRT-THR-001 (criterion 1).
+
+## P-042 — The sample host's tests start it as the siblings' do
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-001, PRT-ENG-009,
+PRT-LIB-001
+
+**TL;DR.** The sample host's entry point is top-level statements in `Program.cs`, the one
+file of the repository outside the namespace rule, so the Web SDK generates its public
+`Program`; its tests start it through `WebApplicationFactory<Program>`
+(`Microsoft.AspNetCore.Mvc.Testing`), replacing the client with `Portunus.Testing`'s
+through the factory's service configuration, as the Hermes and Themis samples do. Found at
+phase 6: a test reaches the host only through its entry point, the host may hold no grant,
+and a public type of its own fails CA1515.
+
+- **The same way as the siblings,** whose sample hosts' tests are written so; the factory
+  hosts a generic host as well as a web one, and the sample host serves no request.
+- **What stays.** No grant from the sample host, CA1515 everywhere it applies, and the
+  namespace rule for every other file.
+
+*Rejected:*
+- **A grant to the sample host's tests,** or **CA1515 off in the sample host:** a sample
+  host is a consumer, and a consumer holds neither.
+- **Starting the entry point by reflection:** the factory already does it, tested.
+
+**Propagated to:**
+- `06` PRT-ENG-001 (the sample host and the namespace rule) and PRT-ENG-009 (the test
+  package); `04` PRT-LIB-001 (the sample host's test project's row).

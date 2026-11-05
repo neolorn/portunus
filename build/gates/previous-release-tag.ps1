@@ -1,7 +1,8 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-    Writes the release tag before Head, from which the commit-message gate checks a release tag (06 PRT-ENG-011, PRT-ENG-012).
+    Writes the release tag before Head, from which the commit-message gate checks a release tag
+    and against which the release gate compares (06 PRT-ENG-011, PRT-ENG-012; 04 PRT-LIB-007).
 .DESCRIPTION
     A release tag is v<V>, V a final release X.Y.Z or a release candidate X.Y.Z-rc.N, each
     number without a leading zero and N counting from 1 (P-017); another tag is no release.
@@ -11,13 +12,18 @@
 .PARAMETER Repository
     The repository to read; by default, this one.
 .PARAMETER Head
-    The release tag's commit.
+    The commit after whose parent the tags are read: a release tag's commit, or the commit a
+    pull request's gates check.
+.PARAMETER Final
+    Reads the final releases alone, leaving every release candidate out: the newest final
+    release, whose baseline the release gate compares with.
 #>
 [CmdletBinding()]
 param(
     [string] $Repository = (Join-Path $PSScriptRoot '..' '..'),
     [Parameter(Mandatory)]
-    [string] $Head
+    [string] $Head,
+    [switch] $Final
 )
 
 $ErrorActionPreference = 'Stop'
@@ -37,6 +43,8 @@ $releases = @(
         if (-not $match.Success) { continue }
 
         $candidate = $match.Groups['candidate']
+        if ($Final -and $candidate.Success) { continue }
+
         [pscustomobject]@{
             Tag       = $tag
             Major     = [bigint]::Parse($match.Groups['major'].Value)
