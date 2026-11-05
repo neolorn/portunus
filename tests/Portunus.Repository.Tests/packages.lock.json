@@ -347,12 +347,25 @@
       "portunus.core": {
         "type": "Project"
       },
+      "portunus.hermes": {
+        "type": "Project",
+        "dependencies": {
+          "Hermes.Core": "[1.0.0-rc.6, 1.0.0-rc.6]",
+          "Portunus": "[1.0.0, )"
+        }
+      },
       "portunus.testing": {
         "type": "Project",
         "dependencies": {
           "Portunus": "[1.0.0, )",
           "Portunus.Core": "[1.0.0, )"
         }
+      },
+      "Hermes.Core": {
+        "type": "CentralTransitive",
+        "requested": "[1.0.0-rc.6, 1.0.0-rc.6]",
+        "resolved": "1.0.0-rc.6",
+        "contentHash": "lM8tFcZaZXQpEq8DZVeY/bLDaMMF5LcZ/lNgEfl4NC4Im6+cyuWJJRs7LUe4CVFAMHtQ+KKusJMUbQlJ2vVpNQ=="
       },
       "Microsoft.Extensions.Configuration.Abstractions": {
         "type": "CentralTransitive",

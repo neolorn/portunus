@@ -31,3 +31,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `portunus`, the .NET tool: `push`, which reads a vault through the owner's own 1Password app, checks its layout and sends it over `ssh` to `portunus-agent receive`; `check`, which writes each finding of a vault's layout; and `status`, which reads an agent's status over `ssh` (`02` PRT-PSH-002, PRT-PSH-004).
 - The tool finds `op` and `ssh` only in a `PATH` folder that is an absolute path, never in one that names the working directory (`02` PRT-PSH-002).
 - A cancelled `op` or `ssh` command of the tool killed with every process it started (`02` PRT-PSH-002).
+- `Portunus.Hermes`, Hermes's `ISecretSource` over the client: each name at its address, the table's base64 names decoded, its text names and any name it does not list passed as UTF-8 text, every live version in ascending order (`04` PRT-LIB-006, `03` PRT-ROT-002, P-037).
