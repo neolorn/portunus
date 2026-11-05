@@ -14,6 +14,27 @@ internal static class Codes
     /// <summary>The development file cannot be read, is not JSON or breaks the layout (startup).</summary>
     internal const string StartupFileInvalid = "secrets.startup.fileinvalid";
 
+    /// <summary>The agent's file or a directory above it is writable by anyone but root; its detail <c>key</c> is <c>file</c> or the directory (agent).</summary>
+    internal const string AgentConfigurationUnsafe = "secrets.agent.configurationunsafe";
+
+    /// <summary>An agent's configuration value outside its rule; its detail <c>key</c> names it (agent).</summary>
+    internal const string AgentConfigurationInvalid = "secrets.agent.configurationinvalid";
+
+    /// <summary>A declaration outside its rule; its details <c>process</c> and <c>member</c> name it (agent).</summary>
+    internal const string AgentDeclarationInvalid = "secrets.agent.declarationinvalid";
+
+    /// <summary>A swap area is active (agent).</summary>
+    internal const string AgentSwapActive = "secrets.agent.swapactive";
+
+    /// <summary><c>op</c> is not the pinned version; its detail <c>found</c> is the version it answered (agent).</summary>
+    internal const string AgentOpVersion = "secrets.agent.opversion";
+
+    /// <summary>The token file cannot be read, is empty or too large (agent).</summary>
+    internal const string AgentTokenUnavailable = "secrets.agent.tokenunavailable";
+
+    /// <summary>A fault that carries no code, in either executable.</summary>
+    internal const string Fault = "secrets.fault";
+
     /// <summary>The agent is <c>ready</c> and its set holds no secret at the address.</summary>
     internal const string SecretUnknown = "secrets.secret.unknown";
 

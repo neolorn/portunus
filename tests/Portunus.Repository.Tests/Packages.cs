@@ -35,6 +35,12 @@ internal static class Packages
     /// <summary>The test project over the whole repository, the one with no source project.</summary>
     internal const string RepositoryTests = "Portunus.Repository.Tests";
 
+    /// <summary>The fakes' console project, the fake <c>op</c> and <c>ssh</c> (<c>06</c> PRT-ENG-001).</summary>
+    internal const string Fakes = "Portunus.Fakes";
+
+    /// <summary>The console project the agent's signal tests run (<c>06</c> PRT-ENG-001, P-027).</summary>
+    internal const string Harness = "Portunus.Agent.Harness";
+
     /// <summary>Every part, in the order of <c>00</c> section 2.2.</summary>
     internal static IReadOnlyList<string> All { get; } = [Core, Client, Janus, Hermes, Themis, Testing, Cli, Agent];
 
@@ -42,10 +48,10 @@ internal static class Packages
     internal static IReadOnlyList<string> Packed { get; } = [Core, Client, Janus, Hermes, Themis, Testing, Cli];
 
     /// <summary>
-    /// The parts whose projects the repository holds from phase 0; the agent's comes in phase 3,
-    /// the tool's in phase 4 and the adapters' in phase 5 (plan).
+    /// The parts whose projects the repository holds: from phase 0, and the agent's from phase 3;
+    /// the tool's comes in phase 4 and the adapters' in phase 5 (plan).
     /// </summary>
-    internal static IReadOnlyList<string> Present { get; } = [Core, Client, Testing];
+    internal static IReadOnlyList<string> Present { get; } = [Core, Client, Testing, Agent];
 
     /// <summary>The folders a project may hold, by project (<c>06</c> PRT-ENG-001); every other project is flat.</summary>
     internal static FrozenDictionary<string, IReadOnlyList<string>> Folders { get; } = new Dictionary<string, IReadOnlyList<string>>

@@ -52,6 +52,7 @@ internal static class ReferenceRules
         [Packages.Core] = [],
         [Packages.Client] = [Packages.Core],
         [Packages.Testing] = [Packages.Core, Packages.Client],
+        [Packages.Agent] = [Packages.Core],
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>The packages each part's project may reference at run time, by the same rows.</summary>
@@ -60,6 +61,7 @@ internal static class ReferenceRules
         [Packages.Core] = [],
         [Packages.Client] = HostingAbstractions,
         [Packages.Testing] = [],
+        [Packages.Agent] = Hosting,
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>Answers each reference of a project of the repository at <paramref name="root"/> that PRT-LIB-001 does not allow.</summary>
@@ -221,6 +223,7 @@ internal static class ReferenceRules
         {
             Packages.Core => [Packages.Client, Packages.Agent, Packages.Cli, Packages.Testing],
             Packages.Client => [Packages.Testing],
+            Packages.Agent => [Packages.Harness],
             _ => [],
         };
         return allowed.Contains(grantee, StringComparer.Ordinal);
@@ -228,6 +231,12 @@ internal static class ReferenceRules
 
     private static IReadOnlyList<string> AllowedTestPackages(string testProject)
     {
+        // The fakes and the harness are console projects, which take no test package (06 PRT-ENG-001).
+        if (testProject is Packages.Fakes or Packages.Harness)
+        {
+            return [];
+        }
+
         return HostTestProjects.Contains(testProject, StringComparer.Ordinal) ? [.. TestPackages, "Microsoft.Extensions.Hosting"] : TestPackages;
     }
 
@@ -237,6 +246,12 @@ internal static class ReferenceRules
         if (string.Equals(testProject, Packages.RepositoryTests, StringComparison.Ordinal))
         {
             return Packages.All;
+        }
+
+        // The fakes speak the formats of Portunus.Core, and the harness builds the agent's host (P-027).
+        if (testProject is Packages.Fakes or Packages.Harness)
+        {
+            return testProject is Packages.Fakes ? [Packages.Core] : [Packages.Agent];
         }
 
         string source = testProject.EndsWith(".Tests", StringComparison.Ordinal) ? testProject[..^".Tests".Length] : testProject;

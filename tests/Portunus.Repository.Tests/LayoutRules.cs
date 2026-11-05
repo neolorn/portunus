@@ -58,7 +58,7 @@ internal static partial class LayoutRules
 
         foreach (string test in tests)
         {
-            bool known = string.Equals(test, Packages.RepositoryTests, StringComparison.Ordinal)
+            bool known = test is Packages.RepositoryTests or Packages.Fakes or Packages.Harness
                 || sources.Any(source => string.Equals(test, Packages.TestProject(source), StringComparison.Ordinal));
             if (!known)
             {
