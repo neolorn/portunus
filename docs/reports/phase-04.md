@@ -109,7 +109,7 @@ Asked in phase 4, answered:
 
 ## Checks
 
-- The commit: the report's own commit, the head of `phase-04`, on `3a40144`; the branch stands on the lead's `36ffdaa` and `c26f8d6`, on `370ee0e` of `phase-03`.
+- The commit: the report's own commit, the head of `phase-04`, on `c85ea1c`; the branch stands on the lead's `9d360fa` and `c26f8d6`, on `370ee0e` of `phase-03`.
 - Fast checks on every commit: built in Release with warnings as errors and the analysers; `dotnet format --verify-no-changes`; the unit tests of the projects each commit changes; green.
-- Before the push: every unit test, the integration tests, the `linux` kind in the SDK's container, the agent's publish, the commit-message gate and the full-history secret scan, by `run-gates.ps1 -Base main -Head HEAD`: every gate passed on `ac0b659` but the commit-message gate, which finds one body line of `2c90ede` over 72 characters; the unpushed commits' replay that rewords it waits on the owner's decision, so nothing is pushed.
+- Before the push: every unit test, the integration tests, the `linux` kind in the SDK's container, the agent's publish, the commit-message gate and the full-history secret scan, by `run-gates.ps1 -Base main -Head HEAD`: every gate passed. Before the first push, on the owner's approval, the unpushed commits were replayed to reword one body line of the push's commit, now `21ced0c`, which the commit-message gate found over 72 characters.
 - The gate of record: the pipeline's `gates` run on the report's own commit, whose identifier and result the message naming the pull request gives.
