@@ -15,7 +15,7 @@ project SHALL reference only what this item allows it.
 |---|---|
 | `Portunus.Core` | The base class library only |
 | `Portunus` | `Portunus.Core`; the Microsoft.Extensions abstractions of `06` PRT-ENG-009 |
-| `Portunus.Janus` | `Portunus`; `Janus.Core` at the version of `07` section 7 |
+| `Portunus.Janus` | `Portunus`; `Janus.Hosting`, which carries `Janus.Core`, at the version of `07` section 7 (P-036) |
 | `Portunus.Hermes` | `Portunus`; `Hermes.Core` at the version of `07` section 7 |
 | `Portunus.Themis` | `Portunus`; `Themis.Core` at the version of `07` section 7 |
 | `Portunus.Testing` | `Portunus.Core`, `Portunus` |
@@ -210,16 +210,18 @@ answers by refusing its start where it needs the secret.
 
 | Library | Names read as base64 | Names read as UTF-8 text |
 |---|---|---|
-| Hermes | `contentKeys`, `hashKeys`, `tokenKeys`, `smsReportKey`, `pushVapidKeys` | `connection`, `listenConnection`, `emailSubmission` |
+| Hermes | `contentKeys`, `hashKeys`, `tokenKeys`, `smsReportKey`, `pushVapidKeys` | `connection`, `listenConnection`, `emailSubmission`, `smsCequens` (Hermes M-043) |
 | Themis | None | `connection` |
 
 Each answers `SecretVersions` of the address's live versions, a single secret as version
 1; the `.current` marker is not passed, since Hermes takes its write version from its
 own configuration (`03` PRT-ROT-002). It answers none (the sibling's "host holds no such
 secret") for any failure, so the sibling refuses its start naming the secret where it
-needs it; a denied address and a name the table does not list (one a later release of
-the sibling added) are logged at the Warning level with the name first, so the cause is
-plain.
+needs it; a denied address is logged at the Warning level with the name first, so the
+cause is plain. A name the table does not list (one a later release or an optional
+package of the sibling added) is read as UTF-8 text and passed on, logged once at the
+Information level with the name; the sibling's own start check refuses it by name where
+its form is not text (P-037).
 
 *Source: P-012, P-013, P-020*
 

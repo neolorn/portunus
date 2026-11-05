@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Portunus.Cli;
@@ -8,6 +9,6 @@ internal static class Program
 {
     private static Task<int> Main(string[] args)
     {
-        return ToolCommand.MainAsync(args, ToolEnvironment.OfProcess(), Console.Out, Console.Error);
+        return ToolCommand.MainAsync(args, ToolEnvironment.OfProcess(), Console.Out, Console.Error, CancellationToken.None);
     }
 }

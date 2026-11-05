@@ -10,6 +10,9 @@ namespace Portunus.Repository.Tests;
 [Trait("Category", "unit")]
 public sealed class RepositoryLayoutTests
 {
+    /// <summary>The package source mapping PRT-ENG-001 gives (P-036).</summary>
+    private const string Mapping = """<packageSourceMapping><packageSource key="nuget.org"><package pattern="*" /></packageSource><packageSource key="vendor"><package pattern="Janus.*" /><package pattern="Hermes.Core" /><package pattern="Themis.Core" /></packageSource></packageSourceMapping>""";
+
     private static readonly IReadOnlyList<string> RootFiles =
         ["Portunus.sln", "Directory.Build.props", "Directory.Packages.props", "global.json", ".editorconfig", ".gitignore", "nuget.config", "CHANGELOG.md"];
 
@@ -265,16 +268,17 @@ public sealed class RepositoryLayoutTests
     }
 
     [Theory]
-    [InlineData("<packageSources><add key=\"nuget.org\" value=\"https://api.nuget.org/v3/index.json\" /></packageSources>", "nuget.config does not clear the package sources first.")]
-    [InlineData("<packageSources><clear /><add key=\"nuget.org\" value=\"https://api.nuget.org/v3/index.json\" /><add key=\"local\" value=\"artifacts/packages\" /></packageSources>", "does not add nuget.org, https://api.nuget.org/v3/index.json, as its one source.")]
-    [InlineData("<packageSources><clear /><add key=\"nuget.org\" value=\"https://example.invalid/v3/index.json\" /></packageSources>", "does not add nuget.org, https://api.nuget.org/v3/index.json, as its one source.")]
+    [InlineData("<packageSources><add key=\"nuget.org\" value=\"https://api.nuget.org/v3/index.json\" /><add key=\"vendor\" value=\"vendor\" /></packageSources>", "nuget.config does not clear the package sources first.")]
+    [InlineData("<packageSources><clear /><add key=\"nuget.org\" value=\"https://api.nuget.org/v3/index.json\" /></packageSources>", "does not add nuget.org, https://api.nuget.org/v3/index.json, and vendor/ as its two sources.")]
+    [InlineData("<packageSources><clear /><add key=\"nuget.org\" value=\"https://api.nuget.org/v3/index.json\" /><add key=\"vendor\" value=\"vendor\" /><add key=\"local\" value=\"artifacts/packages\" /></packageSources>", "does not add nuget.org, https://api.nuget.org/v3/index.json, and vendor/ as its two sources.")]
+    [InlineData("<packageSources><clear /><add key=\"nuget.org\" value=\"https://example.invalid/v3/index.json\" /><add key=\"vendor\" value=\"vendor\" /></packageSources>", "does not add nuget.org, https://api.nuget.org/v3/index.json, and vendor/ as its two sources.")]
     public void PRT_ENG_001_AC1_PackageSourcesOutsideTheRuleAreFound(string sources, string expected)
     {
         using RepositoryFixture fixture = new();
         fixture.Write("nuget.config", $"""
             <configuration>
               {sources}
-              <packageSourceMapping><packageSource key="nuget.org"><package pattern="*" /></packageSource></packageSourceMapping>
+              {Mapping}
             </configuration>
             """);
 
@@ -283,19 +287,58 @@ public sealed class RepositoryLayoutTests
 
     [Theory]
     [InlineData("")]
-    [InlineData("<packageSourceMapping><packageSource key=\"nuget.org\"><package pattern=\"Microsoft.*\" /></packageSource></packageSourceMapping>")]
-    [InlineData("<packageSourceMapping><packageSource key=\"nuget.org\"><package pattern=\"*\" /></packageSource><packageSource key=\"other\"><package pattern=\"Portunus.*\" /></packageSource></packageSourceMapping>")]
+    [InlineData("<packageSourceMapping><packageSource key=\"nuget.org\"><package pattern=\"*\" /></packageSource></packageSourceMapping>")]
+    [InlineData("<packageSourceMapping><packageSource key=\"nuget.org\"><package pattern=\"Microsoft.*\" /></packageSource><packageSource key=\"vendor\"><package pattern=\"Janus.*\" /><package pattern=\"Hermes.Core\" /><package pattern=\"Themis.Core\" /></packageSource></packageSourceMapping>")]
+    [InlineData("<packageSourceMapping><packageSource key=\"nuget.org\"><package pattern=\"*\" /></packageSource><packageSource key=\"vendor\"><package pattern=\"Janus.*\" /><package pattern=\"Hermes.*\" /><package pattern=\"Themis.Core\" /></packageSource></packageSourceMapping>")]
+    [InlineData("<packageSourceMapping><packageSource key=\"nuget.org\"><package pattern=\"*\" /></packageSource><packageSource key=\"vendor\"><package pattern=\"Janus.*\" /><package pattern=\"Hermes.Core\" /><package pattern=\"Themis.Core\" /></packageSource><packageSource key=\"other\"><package pattern=\"Portunus.*\" /></packageSource></packageSourceMapping>")]
     public void PRT_ENG_001_AC1_PackageSourceMappingOutsideTheRuleIsFound(string mapping)
     {
         using RepositoryFixture fixture = new();
         fixture.Write("nuget.config", $"""
             <configuration>
-              <packageSources><clear /><add key="nuget.org" value="https://api.nuget.org/v3/index.json" /></packageSources>
+              <packageSources><clear /><add key="nuget.org" value="https://api.nuget.org/v3/index.json" /><add key="vendor" value="vendor" /></packageSources>
               {mapping}
             </configuration>
             """);
 
-        Assert.Contains("nuget.config does not map every package identifier, \"*\", to nuget.org alone.", LayoutRules.PackageSourceViolations(fixture.Root));
+        Assert.Contains("nuget.config does not map Janus.*, Hermes.Core, Themis.Core to vendor/ alone and every other identifier, \"*\", to nuget.org alone.", LayoutRules.PackageSourceViolations(fixture.Root));
+    }
+
+    [Fact]
+    public void PRT_ENG_001_AC1_VendoredFilesMatchTheirSums()
+    {
+        Assert.Empty(LayoutRules.VendorViolations(RepositoryRoot.Path));
+    }
+
+    [Fact]
+    public void PRT_ENG_001_AC1_VendoredFileWhoseShaDiffersIsFound()
+    {
+        using RepositoryFixture fixture = new();
+        fixture.Write("vendor/Hermes.Core.1.0.0-rc.6.nupkg", "a package");
+        fixture.Write("vendor/SHA256SUMS", $"{new string('0', 64)}  Hermes.Core.1.0.0-rc.6.nupkg\n");
+
+        Assert.Contains("vendor/Hermes.Core.1.0.0-rc.6.nupkg's SHA-256 differs from vendor/SHA256SUMS.", LayoutRules.VendorViolations(fixture.Root));
+    }
+
+    [Fact]
+    public void PRT_ENG_001_AC1_VendoredFileTheSumsDoNotListIsFound()
+    {
+        using RepositoryFixture fixture = new();
+        fixture.Write("vendor/Themis.Core.1.0.0-rc.2.nupkg", "a package");
+        fixture.Write("vendor/SHA256SUMS", string.Empty);
+
+        Assert.Contains("vendor/Themis.Core.1.0.0-rc.2.nupkg is not listed in vendor/SHA256SUMS.", LayoutRules.VendorViolations(fixture.Root));
+    }
+
+    [Fact]
+    public void PRT_ENG_001_AC1_VendoredFileOfTheListedShaIsAccepted()
+    {
+        using RepositoryFixture fixture = new();
+        fixture.Write("vendor/Hermes.Core.1.0.0-rc.6.nupkg", "a package");
+        string hash = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData("a package"u8));
+        fixture.Write("vendor/SHA256SUMS", $"{hash}  Hermes.Core.1.0.0-rc.6.nupkg\n");
+
+        Assert.Empty(LayoutRules.VendorViolations(fixture.Root));
     }
 
     [Fact]

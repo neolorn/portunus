@@ -69,6 +69,12 @@ internal static class OpCommand
         {
             await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
         }
+        catch (OperationCanceledException)
+        {
+            // A cancelled command is killed with every process it started, as the agent's is.
+            process.Kill(entireProcessTree: true);
+            throw;
+        }
         finally
         {
             await Task.WhenAll(reading, readingError).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);

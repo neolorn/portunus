@@ -64,6 +64,26 @@ public sealed class PackageManifestRuleTests
         Assert.Equal(["Portunus depends on Portunus.Core, which was not packed with it."], PackageRules.DependencyViolations(manifests));
     }
 
+    [Theory]
+    [InlineData("1.0.0-rc.6")]
+    [InlineData("[1.0.0-rc.5]")]
+    [InlineData("[1.0.0-rc.6, )")]
+    public void PRT_LIB_001_AC2_AdapterDependingOnItsSiblingNotAtTheExactVersionIsFound(string version)
+    {
+        PackageManifest[] manifests = [Parse(Core), Parse(Client("[1.2.3]")), Parse(Adapter(version))];
+
+        Assert.Equal(
+            [$"Portunus.Hermes depends on Hermes.Core at {version}, not the exact version of 07 section 7, [1.0.0-rc.6]."],
+            PackageRules.DependencyViolations(manifests));
+    }
+
+    [Fact]
+    public void PRT_LIB_001_AC2_AdapterDependingOnItsSiblingAtTheExactVersionIsAccepted()
+    {
+        PackageManifest[] manifests = [Parse(Core), Parse(Client("[1.2.3]")), Parse(Adapter("[1.0.0-rc.6]"))];
+
+        Assert.Empty(PackageRules.DependencyViolations(manifests));
+    }
     [Fact]
     public void PackageTable_Descriptions_AreTheCellsWithoutMarkupOrReferences()
     {
@@ -126,6 +146,24 @@ public sealed class PackageManifestRuleTests
                   <group targetFramework="net10.0">
                     <dependency id="Portunus.Core" version="{coreVersion}" exclude="Build,Analyzers" />
                     <dependency id="Microsoft.Extensions.Options" version="10.0.0" exclude="Build,Analyzers" />
+                  </group>
+                </dependencies>
+              </metadata>
+            </package>
+            """;
+    }
+
+    private static string Adapter(string siblingVersion)
+    {
+        return $"""
+            <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+              <metadata>
+                <id>Portunus.Hermes</id>
+                <version>1.2.3</version>
+                <dependencies>
+                  <group targetFramework="net10.0">
+                    <dependency id="Portunus" version="[1.2.3]" exclude="Build,Analyzers" />
+                    <dependency id="Hermes.Core" version="{siblingVersion}" exclude="Build,Analyzers" />
                   </group>
                 </dependencies>
               </metadata>
