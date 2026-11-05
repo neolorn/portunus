@@ -212,6 +212,84 @@ internal static class AssemblySurface
     }
 
     /// <summary>
+    /// The strings each type's method bodies load, by the type's full name, a nested type's
+    /// strings counted as its outermost type's, so a lambda's or a state machine's are its
+    /// declaring type's own; an argument's name the compiler hands a guard is left out.
+    /// </summary>
+    internal static IReadOnlyDictionary<string, IReadOnlySet<string>> TypeStrings(string assembly)
+    {
+        using FileStream stream = File.OpenRead(assembly);
+        using PEReader reader = new(stream);
+        MetadataReader metadata = reader.GetMetadataReader();
+        SignatureNames names = new(metadata);
+        Dictionary<string, HashSet<string>> strings = new(StringComparer.Ordinal);
+
+        foreach (TypeDefinitionHandle typeHandle in metadata.TypeDefinitions)
+        {
+            TypeDefinitionHandle outermost = typeHandle;
+            while (!metadata.GetTypeDefinition(outermost).GetDeclaringType().IsNil)
+            {
+                outermost = metadata.GetTypeDefinition(outermost).GetDeclaringType();
+            }
+
+            string name = SignatureNames.Name(metadata, outermost);
+            foreach (MethodDefinitionHandle methodHandle in metadata.GetTypeDefinition(typeHandle).GetMethods())
+            {
+                MethodDefinition method = metadata.GetMethodDefinition(methodHandle);
+                if (method.RelativeVirtualAddress == 0)
+                {
+                    continue;
+                }
+
+                BlobReader il = reader.GetMethodBody(method.RelativeVirtualAddress).GetILReader();
+                foreach ((UserStringHandle handle, EntityHandle? next) in IntermediateLanguage.StringTokens(il))
+                {
+                    // An argument's name, which the compiler hands a guard such as ThrowIfNull, is no string of the type's own.
+                    if (next is EntityHandle call && Member(metadata, names, call) is (string guard, string member)
+                        && guard.StartsWith("System.Argument", StringComparison.Ordinal) && member.StartsWith("ThrowIf", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    if (!strings.TryGetValue(name, out HashSet<string>? held))
+                    {
+                        held = new HashSet<string>(StringComparer.Ordinal);
+                        strings[name] = held;
+                    }
+
+                    held.Add(metadata.GetUserString(handle));
+                }
+            }
+        }
+
+        return strings.ToDictionary(entry => entry.Key, IReadOnlySet<string> (entry) => entry.Value, StringComparer.Ordinal);
+    }
+
+    /// <summary>The string constants the assembly declares, each as its declaring type's full name and its value.</summary>
+    internal static IReadOnlyList<(string Type, string Value)> StringConstants(string assembly)
+    {
+        using FileStream stream = File.OpenRead(assembly);
+        using PEReader reader = new(stream);
+        MetadataReader metadata = reader.GetMetadataReader();
+        List<(string Type, string Value)> constants = [];
+
+        for (int row = 1; row <= metadata.GetTableRowCount(TableIndex.Constant); row++)
+        {
+            Constant constant = metadata.GetConstant(MetadataTokens.ConstantHandle(row));
+            if (constant.TypeCode != ConstantTypeCode.String || constant.Parent.Kind != HandleKind.FieldDefinition)
+            {
+                continue;
+            }
+
+            FieldDefinition field = metadata.GetFieldDefinition((FieldDefinitionHandle)constant.Parent);
+            BlobReader blob = metadata.GetBlobReader(constant.Value);
+            constants.Add((SignatureNames.Name(metadata, field.GetDeclaringType()), blob.ReadUTF16(blob.Length)));
+        }
+
+        return constants;
+    }
+
+    /// <summary>
     /// The public enumerations of the assembly, by full name, each with its members in the order
     /// the metadata declares them and the spelling each member's <c>JsonStringEnumMemberName</c>
     /// carries, or none where it carries none.
