@@ -3,14 +3,13 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace Portunus.Core;
 
 /// <summary>
 /// What the wire formats share (<c>06</c> PRT-ENG-006): UTF-8 JSON without indentation, the
-/// protocol version first, a value in base64, a failure's code and details, each written into
+/// protocol version first, a value in base64url, a failure's code and details, each written into
 /// pinned arrays and read from them (PRT-ENG-005).
 /// </summary>
 internal static class WireJson
@@ -109,30 +108,20 @@ internal static class WireJson
         }
     }
 
-    /// <summary>Reads a value in base64 into an array of <paramref name="values"/>, answering false for any other token or text.</summary>
+    /// <summary>
+    /// Reads a value in base64url into an array of <paramref name="values"/>, answering false
+    /// for any other token or text, and for an escaped string, which no value of the rule needs
+    /// (P-023), so the value is decoded from the document's own bytes.
+    /// </summary>
     internal static bool TryReadValue(ref Utf8JsonReader reader, PinnedValues values, out ReadOnlyMemory<byte> value)
     {
         value = ReadOnlyMemory<byte>.Empty;
-        if (reader.TokenType != JsonTokenType.String)
+        if (reader.TokenType != JsonTokenType.String || reader.ValueIsEscaped || reader.HasValueSequence)
         {
             return false;
         }
 
-        if (!reader.ValueIsEscaped)
-        {
-            return Base64Value.TryDecode(reader.ValueSpan, values, out value);
-        }
-
-        byte[] unescaped = GC.AllocateArray<byte>(reader.ValueSpan.Length, pinned: true);
-        try
-        {
-            int length = reader.CopyString(unescaped);
-            return Base64Value.TryDecode(unescaped.AsSpan(0, length), values, out value);
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(unescaped);
-        }
+        return Base64Value.TryDecode(reader.ValueSpan, values, out value);
     }
 
     /// <summary>Reads a failure's object, or answers none where it is not one: a code, and details of strings alone.</summary>

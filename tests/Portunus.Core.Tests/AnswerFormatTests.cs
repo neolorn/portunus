@@ -37,7 +37,7 @@ public sealed class AnswerFormatTests
 
         using PinnedDocument document = AnswerFormat.WriteSecret(2, versions);
 
-        Assert.Equal("""{"version":1,"state":"ready","secret":{"current":2,"versions":{"1":"+/8AAQ==","2":"SG9zdD1kYg=="}}}""", Text(document));
+        Assert.Equal("""{"version":1,"state":"ready","secret":{"current":2,"versions":{"1":"-_8AAQ","2":"SG9zdD1kYg"}}}""", Text(document));
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public sealed class AnswerFormatTests
     [Fact]
     public void Read_Secret_AnswersItsVersionsAndValues()
     {
-        Result<WireAnswer> answer = Read("""{"version":1,"state":"ready","secret":{"versions":{"2":"SG9zdD1kYg==","1":"+/8AAQ=="},"current":2,"later":true}}""");
+        Result<WireAnswer> answer = Read("""{"version":1,"state":"ready","secret":{"versions":{"2":"SG9zdD1kYg","1":"-_8AAQ"},"current":2,"later":true}}""");
 
         WireAnswer.Value secret = Assert.IsType<WireAnswer.Value>(answer.Value);
         using (secret.Values)
@@ -107,6 +107,27 @@ public sealed class AnswerFormatTests
             Assert.Equal("Host=db"u8.ToArray(), secret.Versions[2].ToArray());
             Assert.Equal(new byte[] { 0xFB, 0xFF, 0x00, 0x01 }, secret.Versions[1].ToArray());
             Assert.Equal("Value { Current = 2, Versions = [1, 2] }", secret.ToString());
+        }
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    public void WriteSecret_ValueOfEachLength_IsWrittenUnpaddedAndReadBack(int length)
+    {
+        byte[] value = new byte[length];
+        Array.Fill(value, (byte)0xFF);
+
+        using PinnedDocument document = AnswerFormat.WriteSecret(1, new Dictionary<int, ReadOnlyMemory<byte>> { [1] = value });
+        WireAnswer.Value secret = Assert.IsType<WireAnswer.Value>(AnswerFormat.Read(document.Span).Value);
+        using (secret.Values)
+        {
+            Assert.DoesNotContain("=", Text(document), StringComparison.Ordinal);
+            Assert.Equal(value, secret.Versions[1].ToArray());
         }
     }
 
@@ -141,11 +162,13 @@ public sealed class AnswerFormatTests
     [InlineData("""{"version":1,"state":"ready","since":"2026-11-05T09:00:00Z","source":"vault","loadedAt":"2026-11-05T09:00:12Z"}""")]
     [InlineData("""{"version":1,"state":"ready","since":"2026-11-05T09:00:00Z","source":"vault","loadedAt":"2026-11-05T09:00:12Z","items":-1}""")]
     [InlineData("""{"version":1,"state":"ready","since":"2026-11-05T09:00:00Z","source":"disk","loadedAt":"2026-11-05T09:00:12Z","items":4}""")]
-    [InlineData("""{"version":1,"state":"ready","secret":{"current":3,"versions":{"1":"MQ==","2":"Mg=="}}}""")]
+    [InlineData("""{"version":1,"state":"ready","secret":{"current":3,"versions":{"1":"MQ","2":"Mg"}}}""")]
     [InlineData("""{"version":1,"state":"ready","secret":{"current":1,"versions":{}}}""")]
-    [InlineData("""{"version":1,"state":"ready","secret":{"current":1,"versions":{"01":"MQ=="}}}""")]
-    [InlineData("""{"version":1,"state":"ready","secret":{"current":1,"versions":{"1":"MQ"}}}""")]
-    [InlineData("""{"version":1,"state":"waiting","secret":{"current":1,"versions":{"1":"MQ=="}}}""")]
+    [InlineData("""{"version":1,"state":"ready","secret":{"current":1,"versions":{"01":"MQ"}}}""")]
+    [InlineData("""{"version":1,"state":"ready","secret":{"current":1,"versions":{"1":"MQ=="}}}""")]
+    [InlineData("""{"version":1,"state":"ready","secret":{"current":1,"versions":{"1":"M\u0051"}}}""")]
+    [InlineData("""{"version":1,"state":"ready","secret":{"current":1,"versions":{"1":"MR"}}}""")]
+    [InlineData("""{"version":1,"state":"waiting","secret":{"current":1,"versions":{"1":"MQ"}}}""")]
     [InlineData("""{"version":1,"state":"ready","failure":{"code":"secrets.secret.unknown"}}""")]
     [InlineData("""{"version":1,"state":"ready","failure":{"code":"","details":{}}}""")]
     [InlineData("""{"version":1,"state":"ready","failure":{"code":"secrets.secret.unknown","details":{"item":1}}}""")]

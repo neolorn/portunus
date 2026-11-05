@@ -61,7 +61,8 @@ internal static class AnswerFormat
             writer.WriteStartObject("versions");
             foreach (KeyValuePair<int, ReadOnlyMemory<byte>> version in versions.OrderBy(version => version.Key))
             {
-                writer.WriteBase64String(version.Key.ToString(CultureInfo.InvariantCulture), version.Value.Span);
+                writer.WritePropertyName(version.Key.ToString(CultureInfo.InvariantCulture));
+                Base64Value.Write(writer, version.Value.Span);
             }
 
             writer.WriteEndObject();

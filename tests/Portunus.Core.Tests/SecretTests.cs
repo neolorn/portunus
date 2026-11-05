@@ -31,6 +31,7 @@ public sealed class SecretTests
         {
             Assert.DoesNotContain(Encoding.UTF8.GetString(value), printed, StringComparison.Ordinal);
             Assert.DoesNotContain(Convert.ToBase64String(value), printed, StringComparison.Ordinal);
+            Assert.DoesNotContain(System.Buffers.Text.Base64Url.EncodeToString(value), printed, StringComparison.Ordinal);
             Assert.DoesNotContain(Convert.ToHexString(value), printed, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain(string.Join(", ", value.Select(octet => octet.ToString(System.Globalization.CultureInfo.InvariantCulture))), printed, StringComparison.Ordinal);
         }

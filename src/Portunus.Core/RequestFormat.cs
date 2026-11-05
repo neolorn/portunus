@@ -61,7 +61,8 @@ internal static class RequestFormat
                 {
                     writer.WriteStartObject();
                     writer.WriteString("label", field.Label);
-                    writer.WriteBase64String("value", field.Value.Span);
+                    writer.WritePropertyName("value");
+                    Base64Value.Write(writer, field.Value.Span);
                     writer.WriteEndObject();
                 }
 

@@ -38,7 +38,7 @@ public sealed class RequestFormatTests
         using (document)
         {
             Assert.Equal(
-                """{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Themis","fields":[{"label":"connection","value":"SG9zdD1kYg=="}]},{"title":"Janus","fields":[{"label":"keys.1","value":"+/8AAQ=="},{"label":"keys.current","value":"MQ=="}]}]}""",
+                """{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Themis","fields":[{"label":"connection","value":"SG9zdD1kYg"}]},{"title":"Janus","fields":[{"label":"keys.1","value":"-_8AAQ"},{"label":"keys.current","value":"MQ"}]}]}""",
                 Text(document));
         }
     }
@@ -46,7 +46,7 @@ public sealed class RequestFormatTests
     [Fact]
     public void TryWritePush_PayloadOverTwoMib_AnswersFalse()
     {
-        // Thirty-two values of 48 KiB are 2 MiB in base64, so the payload passes its bound.
+        // Thirty-two values of 48 KiB are 2 MiB in base64url, so the payload passes its bound.
         VaultSet set = new("Sample Production", [new VaultItem("Themis", HasNote: false, [.. Enumerable.Range(0, 32).Select(index => new VaultField($"field{index}", new byte[48 * 1024]))])]);
 
         bool written = RequestFormat.TryWritePush(set, replace: true, out PinnedDocument? document);
@@ -83,7 +83,7 @@ public sealed class RequestFormatTests
     public void Read_PushRequest_AnswersItsSetAndValues()
     {
         Result<WireRequest> request = Read(
-            """{"version":1,"kind":"push","vault":"Sample Production","replace":true,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"+/8AAQ=="},{"label":"keys.current","value":"MQ=="}]}]}""",
+            """{"version":1,"kind":"push","vault":"Sample Production","replace":true,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"-_8AAQ"},{"label":"keys.current","value":"MQ"}]}]}""",
             Limits.AnswerBytes);
 
         WireRequest.Push push = Assert.IsType<WireRequest.Push>(request.Value);
@@ -101,17 +101,14 @@ public sealed class RequestFormatTests
     }
 
     [Fact]
-    public void Read_PushRequestWithAnEscapedValue_AnswersTheValue()
+    public void Read_PushRequestWithAnEscapedValue_IsInvalid()
     {
+        // The escape stands for an underscore, so the text is base64url once unescaped (P-023).
         Result<WireRequest> request = Read(
-            """{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"+\/8AAQ=="}]}]}""",
+            """{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"-\u005f8AAQ"}]}]}""",
             Limits.AnswerBytes);
 
-        WireRequest.Push push = Assert.IsType<WireRequest.Push>(request.Value);
-        using (push.Values)
-        {
-            Assert.Equal(new byte[] { 0xFB, 0xFF, 0x00, 0x01 }, push.Set.Items[0].Fields[0].Value.ToArray());
-        }
+        Assert.Equal(Codes.RequestInvalid, request.Failure!.Code);
     }
 
     [Theory]
@@ -148,10 +145,13 @@ public sealed class RequestFormatTests
     [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":"no","items":[]}""")]
     [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus"}]}""")]
     [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1"}]}]}""")]
-    [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"+/8AAQ="}]}]}""")]
-    [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"+/8A AQ=="}]}]}""")]
-    [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"+/8=AQ=="}]}]}""")]
+    [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"-_8AAQ="}]}]}""")]
     [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"-_8AAQ=="}]}]}""")]
+    [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"+/8AAQ"}]}]}""")]
+    [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"-_8A AQ"}]}]}""")]
+    [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"-_8=AQ"}]}]}""")]
+    [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"-_8AA"}]}]}""")]
+    [InlineData("""{"version":1,"kind":"push","vault":"Sample Production","replace":false,"items":[{"title":"Janus","fields":[{"label":"keys.1","value":"MR"}]}]}""")]
     public void Read_DocumentOutsideItsForm_IsInvalid(string document)
     {
         Assert.Equal(Codes.RequestInvalid, Read(document, Limits.AnswerBytes).Failure!.Code);
