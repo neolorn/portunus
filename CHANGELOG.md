@@ -22,3 +22,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The client's health check, `Healthy` while the agent is `ready` and `Degraded` with the reason while it waits or cannot be reached (`05` PRT-OPS-004).
 - `FixedSecretClient`, a client a host's tests set, answering what is set, denied or waiting, and keeping every address asked (`04` PRT-LIB-008).
 - `AddPortunus`, the one call a host registers the client with: the client made as the host starts, and the health check `portunus` (`04` PRT-LIB-003, `05` PRT-OPS-004).
+- `AddPortunusTesting`, which puts one `FixedSecretClient` in place of the client, in either order with `AddPortunus` (`04` PRT-LIB-008).

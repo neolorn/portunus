@@ -9,3 +9,5 @@ Portunus.Testing.FixedSecretClient.Remove(Portunus.Core.SecretAddress address) -
 Portunus.Testing.FixedSecretClient.Set(Portunus.Core.SecretAddress address, Portunus.Core.Secret! secret) -> void
 Portunus.Testing.FixedSecretClient.StatusAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Portunus.Core.Result<Portunus.Core.AgentStatus!>!>
 Portunus.Testing.FixedSecretClient.Wait(Portunus.Core.WaitReason reason) -> void
+Portunus.Testing.SecretsTestingServiceCollectionExtensions
+static Portunus.Testing.SecretsTestingServiceCollectionExtensions.AddPortunusTesting(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Portunus.Testing.FixedSecretClient!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
