@@ -17,3 +17,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The secret a set holds at an address, its live versions and its current one, a secret holding only retired versions none (`03` PRT-VLT-004, PRT-VLT-005).
 - The development file's reader, each value a field's text read into a pinned array (`03` PRT-VLT-008).
 - The client's configuration under `Portunus:Client`, each key checked on its raw value and a value outside its rule refused naming the key (`05` PRT-OPS-001).
+- The client's reads from the agent, each waiting while the agent waits or cannot be reached, within `Portunus:Client:WaitTimeout`, and its status (`04` PRT-LIB-004).
