@@ -10,22 +10,29 @@ Every test below was written before the code it proves. The client's tests are i
 **`04` PRT-LIB-004**: criteria 1 to 4 (`AgentSecretClient`, `AgentConnection`, `ClientLog`).
 - AgentSecretClientTests (integration, a fake agent on a real socket and a test clock): PRT_LIB_004_AC1_ReadWhileTheAgentWaitsAnswersTheSecretAfterTheWaitLoggedOnce; PRT_LIB_004_AC2_ReadWithNoSocketAnswersTheWaitTimeoutOnceItHasPassedAndNotBefore; PRT_LIB_004_AC3_DeniedAddressAnswersAtOnceWithoutWaiting; PRT_LIB_004_AC4_NoLogLineOfTheReadsHoldsAValueTheyUsed; ReadAsync_SecretOfThreeVersions_AnswersEachInArraysOfItsOwn, ReadAsync_AddressTheSetLacks_AnswersUnknownAtOnceAndLogsIt, ReadAsync_AgentOfAnotherProtocolVersion_AnswersTheVersionFailureAtOnce, ReadAsync_WaitTimeoutOfZero_AsksOnce, ReadAsync_AgentClosingWithoutAnAnswer_WaitsAsForAnAgentItCannotReach, ReadAsync_AnswerOutsideEveryForm_WaitsAsForAnAgentItCannotReach, ReadAsync_WaitOfMoreThanAMinute_LogsTheWaitAtMostEveryThirtySeconds, StatusAsync_ReadyAgent_AnswersItsStatus, StatusAsync_WaitingAgent_AnswersItsReason, StatusAsync_NoSocket_AnswersUnreachableOnce
 
-**`04` PRT-LIB-003** (the client's making, `ClientFactory`): criteria 2 and 3. The client checks its configuration when it is made, and each refusal is the `SecretsStartupException` the item gives. The registration is not built (below).
-- ClientFactoryTests (integration): PRT_LIB_003_AC2_ConfigurationValueOutsideItsRuleStopsTheStartNamingTheKey, PRT_LIB_003_AC3_FileSourceInAProductionHostStopsTheStart; Make_FileSourceInAHostThatRegistersNoEnvironment_StopsTheStartAsNotDevelopment, Make_FileThatCannotBeRead_StopsTheStartAsFileInvalid, Make_FileThatIsNotJson_StopsTheStartAsFileInvalid, Make_FileBreakingTheLayout_StopsTheStartNamingItsFirstFinding, Make_AgentSource_AnswersTheAgentsClient
+**`04` PRT-LIB-003**: criteria 1 to 3, each through a real host's start (P-025). `AddPortunus` registers `ISecretClient` once, made by `ClientFactory`, which checks the configuration first; `ClientStart`, the `IHostedLifecycleService` whose `StartingAsync` makes the client; and the health check `portunus`.
+- SecretsServiceCollectionExtensionsTests (integration): PRT_LIB_003_AC1_HostWithValidConfigurationReadsASecretAfterTheOneCall, PRT_LIB_003_AC2_ConfigurationValueOutsideItsRuleStopsTheStartNamingTheKey, PRT_LIB_003_AC3_FileSourceInAProductionHostStopsTheStart; AddPortunus_FileSourceInADevelopmentHost_ReadsTheFile, AddPortunus_HealthCheck_IsRegisteredAsPortunus, AddPortunus_CalledTwice_RegistersOnce, AddPortunus_NullArgument_Throws
+- ClientFactoryTests (integration): Make_ConfigurationValueOutsideItsRule_StopsTheStartNamingTheKey, Make_FileSourceInAProductionHost_StopsTheStartAsNotDevelopment, Make_FileSourceInAHostThatRegistersNoEnvironment_StopsTheStartAsNotDevelopment, Make_FileThatCannotBeRead_StopsTheStartAsFileInvalid, Make_FileThatIsNotJson_StopsTheStartAsFileInvalid, Make_FileBreakingTheLayout_StopsTheStartNamingItsFirstFinding, Make_AgentSource_AnswersTheAgentsClient
 
 **`04` PRT-LIB-005** and **`03` PRT-VLT-008**: criterion 1 of PRT-LIB-005 (`FileSecretClient`; `DevelopmentFile` and `VaultSet.Find`, internal to `Portunus.Core`).
 - ClientFactoryTests: PRT_LIB_005_AC1_DevelopmentHostReadsTheFileAndAnAddressItLacksIsUnknown; Make_FileOfAVersionedSecret_AnswersItsLiveVersionsAndItsStatus
 - DevelopmentFileTests: Read_FileOfItsForm_AnswersTheVaultItsItemsAndTheirValues, Read_EscapedValue_AnswersItsText, Read_MembersItDoesNotKnow_AnswersTheSet, Read_ItemTwice_AnswersBothForTheLayoutsCheck, Read_DocumentOutsideItsForm_AnswersNone
 - VaultSetTests: Find_SingleSecret_AnswersItAsVersionOne, Find_VersionedSecret_AnswersItsLiveVersionsAndItsCurrentOne, Find_AddressOfAnotherCase_AnswersTheSecret, Find_SecretHoldingOnlyRetiredVersions_AnswersNone, Find_AddressTheSetLacks_AnswersNone
 
-**`05` PRT-OPS-004** (the client's health check, `ClientHealthCheck`): criterion 1. Its registration by `AddPortunus` is not built (below).
+**`05` PRT-OPS-004** (the client's health check, `ClientHealthCheck`): criterion 1. `AddPortunus` registers it as `portunus`, reading `Degraded` where it fails (AddPortunus_HealthCheck_IsRegisteredAsPortunus).
 - ClientHealthCheckTests (integration): PRT_OPS_004_AC1_ReadyAgentReadsHealthy, WaitingAgentReadsDegradedWithTheReason, AgentItCannotReachReadsDegradedWithUnreachable; CheckHealthAsync_FileSource_ReadsHealthy
 
 **`05` PRT-OPS-005** (the client's logs): the client logs its waits and each failure it answers through `LoggerMessage` methods, by address, reason and code. Criterion 1 for the client: each integration test of `tests/Portunus.Tests` checks its captured log for every value it used when it ends.
 
-**`04` PRT-LIB-008** (`FixedSecretClient`): its members, with no criterion of its own (criterion 1 below).
+**`04` PRT-LIB-008** (`FixedSecretClient`, `AddPortunusTesting`): every member, with criterion 1 below.
 - FixedSecretClientTests: ReadAsync_NothingSet_AnswersUnknown, StatusAsync_NothingSet_AnswersReady, ReadAsync_SecretSet_AnswersItAtAnAddressOfAnyCase, ReadAsync_SecretRemoved_AnswersUnknown, ReadAsync_AddressDenied_AnswersDeniedWhileWaitingToo, ReadAsync_WhileWaiting_AnswersTheWaitTimeoutWithTheReason, ReadAsync_Released_AnswersTheSecretAgain, Reads_EveryAddressAsked_InOrder
-- AssemblyContractTests (repository): PRT_LIB_002_AC2_TestingDeclaresTheMembersOfTheFixedClient
+- SecretsTestingServiceCollectionExtensionsTests (a real host's start): AddPortunusTesting_EitherOrderWithAddPortunus_ServesTheHostTheFixedClient, AddPortunusTesting_CalledTwice_RegistersOneClientConfiguredByEach, AddPortunusTesting_WithoutConfigure_RegistersAClientAnsweringUnknown, AddPortunusTesting_NullServices_Throws
+
+**`04` PRT-LIB-002** (the client's and the testing package's types): criterion 2.
+- AssemblyContractTests (repository): PRT_LIB_002_AC2_PartDeclaresEveryTypeAndMemberOfItsTable, for `Portunus.Core`, `Portunus` and `Portunus.Testing`
+
+**`06` PRT-ENG-009** and **`04` PRT-LIB-001** (P-025): `tests/Portunus.Tests` and `tests/Portunus.Testing.Tests` take `Microsoft.Extensions.Hosting` at 10.0.14.
+- ProjectReferenceTests (repository): PRT_LIB_001_AC1_ClientsTestProjectTakingTheHostIsAccepted, and from phase 0 PRT_LIB_001_AC1_TestProjectPackageOutsideTheTestPackagesIsFound
 
 **`06` PRT-ENG-008** (the fake agent): `FakeAgent` answers recorded answers of `07` section 6 on a real Unix domain socket under `tmp/`, and `TestClock` is the test `TimeProvider`.
 
@@ -37,9 +44,7 @@ Every test below was written before the code it proves. The client's tests are i
 
 ## Items not built
 
-- `04` PRT-LIB-003, the registration: `AddPortunus`, its one call registering once, the `IHostedLifecycleService` that makes the client, and criterion 1. Parked by open question 1.
-- `05` PRT-OPS-004, the health check's registration as `portunus` by `AddPortunus`. Parked by open question 1.
-- `04` PRT-LIB-008, `AddPortunusTesting`. Parked by open question 1. Criterion 1 also needs `AddPortunusThemisSecrets`: phase 5.
+- `04` PRT-LIB-008 criterion 1, which needs `AddPortunusThemisSecrets`: phase 5.
 - `05` PRT-OPS-001: the adapters' keys in phase 5; the agent's keys and its file's safety in phase 3.
 - `05` PRT-OPS-004 and PRT-OPS-005, the agent's part: phase 3; the tool's and the adapters' logs: phases 4 and 5.
 - `06` PRT-ENG-005 criterion 2, the buffers after a read through internal hooks (`01` PRT-AGT-001 criterion 3): phase 3.
@@ -57,7 +62,7 @@ Every test below was written before the code it proves. The client's tests are i
 
 ## Awaiting the pipeline's run
 
-- The integration tests on Linux, a Unix domain socket under the runner's `tmp/`. Here they ran on Windows' own Unix domain sockets. The gate of record is the `gates` run on this commit, which the message naming the pull request gives.
+- The integration tests on Linux, a Unix domain socket under the runner's `tmp/`, which the run of `24c5f44` passed. Here they ran on Windows' own Unix domain sockets. The gate of record is the `gates` run on this commit, which the message naming the pull request gives.
 
 ## Analyser suppressions
 
@@ -92,27 +97,18 @@ None. The strings the client makes are addresses, reasons, codes, keys, titles a
 
   Governs: `04` PRT-LIB-008, an `ISecretClient` answering what the test sets, as the agent would.
 
+- `src/Portunus/SecretsServiceCollectionExtensions.cs`, a second call: known by the registration of `ClientStart`, and answering at once. `ISecretClient` is added only where none is registered, so a fixed client registered first stays. Governs: `04` PRT-LIB-003, "calling it twice registers once", with PRT-LIB-008, "in either order".
+- `src/Portunus/SecretsServiceCollectionExtensions.cs`, the health check's failure status: `Degraded`, so a check that throws reads `Degraded` too. Governs: `05` PRT-OPS-004, "never `Unhealthy`".
+- `src/Portunus/SecretsServiceCollectionExtensions.cs`, the client's clock and log: the host's `TimeProvider` where it registers one, else the system's; its `ILogger<ISecretClient>` where it registers logging, else none. Governs: `06` PRT-ENG-004, the clock through `TimeProvider`.
+- `src/Portunus.Testing/SecretsTestingServiceCollectionExtensions.cs`, the client's registration: removed by `RemoveAll<ISecretClient>`, so `Portunus` grants `Portunus.Testing` nothing yet. A second call configures the client the first registered. Governs: `04` PRT-LIB-008, "one `FixedSecretClient`", with `06` PRT-ENG-001, whose grant is allowed, not required.
+
 ## Open questions
 
-1. **Tier 2: a host in the client's tests.** Items: `04` PRT-LIB-003 (the registration and criterion 1), PRT-LIB-008 (`AddPortunusTesting`), `05` PRT-OPS-004 (the check's registration).
-
-   What the code needs: a test that makes the one call and reads a secret needs a service container, `Microsoft.Extensions.DependencyInjection`'s `BuildServiceProvider`, or a generic host. `06` PRT-ENG-009 and `04` PRT-LIB-001 give the client's and the testing package's test projects xunit.v3 alone, and nothing they reference brings the container: the hosting abstractions hold `ServiceCollection` but no provider. Configuration is there already, through `Microsoft.Extensions.Configuration`, which the binder depends on.
-
-   Readings:
-   - (a) Add `Microsoft.Extensions.DependencyInjection` as a test package for `tests/Portunus.Tests` and `tests/Portunus.Testing.Tests`, so a test builds a provider from the one call and starts its hosted services by hand.
-   - (b) Give those test projects `Microsoft.Extensions.Hosting`, already in the table for the agent, so a test builds a generic host and runs its start; this also brings the container.
-   - (c) No package: a hand-written container in the tests. It cannot make the types `AddHealthChecks` and the options register without reflection, which `06` PRT-ENG-004 refuses, so it cannot prove the health check's registration.
-
-   Smallest fix:
-   - (a) one row of `06` PRT-ENG-009, one package version, and one reference in each of the two test projects;
-   - (b) the same, with the hosting package;
-   - (c) none in the documents, and criterion 1 of PRT-LIB-003 proven by a fake.
-
-   Parked: `AddPortunus`, the hosted service, the health check's registration, `AddPortunusTesting`. Everything they register is built and tested on its own.
+1. **Tier 2: a host in the client's tests.** Answered by P-025 (`9451767`), reading (b): `tests/Portunus.Tests` and `tests/Portunus.Testing.Tests` take `Microsoft.Extensions.Hosting`. It had parked `AddPortunus`, its hosted service, the health check's registration and `AddPortunusTesting`; each is built and tested through a real host's start.
 
 ## Checks
 
-- The commit: the report's own commit, the head of `phase-02`, on `5b083b6`; the branch stands on `main` at `5cf2b5c` with the lead's `81a75a9` and `67f178f` first.
+- The commit: the report's own commit, the head of `phase-02`, on `a2a7ed1`, which with `231c0a2`, `0cda3d3` and `d904308` builds the answer of `9451767`; the branch stands on `main` at `5cf2b5c`.
 - Fast checks on every commit:
   - each commit of `phase-02` built in Release with warnings as errors, with its analysers, in a clone of its own with a locked restore, and the unit tests of the client, the testing package and Core run: green;
   - `dotnet format Portunus.sln --verify-no-changes`: green.
