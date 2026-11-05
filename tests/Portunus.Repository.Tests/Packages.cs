@@ -49,9 +49,9 @@ internal static class Packages
 
     /// <summary>
     /// The parts whose projects the repository holds: from phase 0, and the agent's from phase 3;
-    /// the tool's from phase 4; the adapters' from phase 5, the Hermes adapter's first (plan).
+    /// the tool's from phase 4; the adapters' from phase 5, Themis's waiting on its package (plan).
     /// </summary>
-    internal static IReadOnlyList<string> Present { get; } = [Core, Client, Hermes, Testing, Cli, Agent];
+    internal static IReadOnlyList<string> Present { get; } = [Core, Client, Janus, Hermes, Testing, Cli, Agent];
 
     /// <summary>The folders a project may hold, by project (<c>06</c> PRT-ENG-001); every other project is flat.</summary>
     internal static FrozenDictionary<string, IReadOnlyList<string>> Folders { get; } = new Dictionary<string, IReadOnlyList<string>>
