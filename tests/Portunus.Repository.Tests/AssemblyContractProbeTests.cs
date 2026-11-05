@@ -264,6 +264,46 @@ public sealed class AssemblyContractProbeTests
     }
 
     [Fact]
+    public async Task PRT_ENG_007_AC1_ConfigurationKeyTheReferenceDoesNotListIsFound()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ScratchFolder folder = new();
+        ProbeProject probe = new(folder, "Probe");
+        probe.WriteProject(string.Empty);
+        probe.WriteSource("Keys.cs", """
+            namespace Probe;
+
+            /// <summary>Keys, listed and not.</summary>
+            public static class Keys
+            {
+                /// <summary>A key the reference lists.</summary>
+                public const string Timeout = "Portunus:Client:Timeout";
+
+                /// <summary>A key the reference does not list.</summary>
+                public const string Retries = "Portunus:Client:Retries";
+
+                /// <summary>Answers keys.</summary>
+                /// <returns>The keys.</returns>
+                public static string[] Answer()
+                {
+                    return ["Portunus:Client", "Portunus:Janus:Items:keyEncryptionKeys", "Portunus:Hermes:Items:contentKeys", "Portunus:Other", "Portunus: not a key"];
+                }
+            }
+            """);
+        ProcessResult build = await probe.BuildAsync(cancellationToken, "-p:TreatWarningsAsErrors=false", "-p:MSBuildTreatWarningsAsErrors=false");
+        Assert.True(build.ExitCode == 0, build.Output);
+
+        string[] violations = [.. NamingRules.KeyViolations("Probe.dll", AssemblySurface.Strings(probe.Assembly))];
+
+        Assert.Equal(
+            [
+                "Probe.dll binds the configuration key Portunus:Client:Retries, which 07 section 4 does not list.",
+                "Probe.dll binds the configuration key Portunus:Other, which 07 section 4 does not list.",
+            ],
+            violations);
+    }
+
+    [Fact]
     public async Task PRT_ENG_007_AC1_EnumerationOutsideTheReferenceIsFound()
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;

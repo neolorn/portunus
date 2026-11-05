@@ -48,6 +48,18 @@ internal static class PublicMemberTable
             "Portunus.Core.ISecretClient.ReadAsync(Portunus.Core.SecretAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Portunus.Core.Result<Portunus.Core.Secret!>!>",
             "Portunus.Core.ISecretClient.StatusAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Portunus.Core.Result<Portunus.Core.AgentStatus!>!>",
         ],
+        [Packages.Testing] =
+        [
+            "Portunus.Testing.FixedSecretClient.FixedSecretClient() -> void",
+            "Portunus.Testing.FixedSecretClient.Set(Portunus.Core.SecretAddress address, Portunus.Core.Secret! secret) -> void",
+            "Portunus.Testing.FixedSecretClient.Remove(Portunus.Core.SecretAddress address) -> void",
+            "Portunus.Testing.FixedSecretClient.Deny(Portunus.Core.SecretAddress address) -> void",
+            "Portunus.Testing.FixedSecretClient.Wait(Portunus.Core.WaitReason reason) -> void",
+            "Portunus.Testing.FixedSecretClient.Release() -> void",
+            "Portunus.Testing.FixedSecretClient.Reads.get -> System.Collections.Generic.IReadOnlyList<Portunus.Core.SecretAddress>!",
+            "Portunus.Testing.FixedSecretClient.ReadAsync(Portunus.Core.SecretAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Portunus.Core.Result<Portunus.Core.Secret!>!>",
+            "Portunus.Testing.FixedSecretClient.StatusAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Portunus.Core.Result<Portunus.Core.AgentStatus!>!>",
+        ],
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>Answers each member the tables give <paramref name="part"/> that the public API files of <paramref name="project"/> do not list.</summary>

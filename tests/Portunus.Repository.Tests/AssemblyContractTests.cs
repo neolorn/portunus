@@ -73,6 +73,13 @@ public sealed class AssemblyContractTests
 
     [Theory]
     [MemberData(nameof(Assemblies))]
+    public void PRT_ENG_007_AC1_EveryConfigurationKeyTheLibraryBindsIsOneTheReferenceLists(string assembly)
+    {
+        Assert.Empty(NamingRules.KeyViolations(assembly, AssemblySurface.Strings(Path.Combine(AppContext.BaseDirectory, assembly))));
+    }
+
+    [Theory]
+    [MemberData(nameof(Assemblies))]
     public void PRT_ENG_007_AC1_EveryEnumerationIsSpelledAsTheReferenceGivesIt(string assembly)
     {
         Assert.Empty(NamingRules.SpellingViolations(AssemblySurface.Enumerations(Path.Combine(AppContext.BaseDirectory, assembly))));
@@ -85,6 +92,12 @@ public sealed class AssemblyContractTests
 
         Assert.Empty(PublicTypeTable.MissingTypes(Packages.Core, AssemblySurface.PublicTypes(assembly)));
         Assert.Empty(PublicMemberTable.Violations(Packages.Core, RepositoryRoot.Combine("src", Packages.Core)));
+    }
+
+    [Fact]
+    public void PRT_LIB_002_AC2_TestingDeclaresTheMembersOfTheFixedClient()
+    {
+        Assert.Empty(PublicMemberTable.Violations(Packages.Testing, RepositoryRoot.Combine("src", Packages.Testing)));
     }
 
     [Theory]
