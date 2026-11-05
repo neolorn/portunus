@@ -610,3 +610,21 @@ phase 1: no rule covered either case.
 **Propagated to:**
 - `03` PRT-VLT-005 (both cases and a criterion).
 
+## P-025 — The client's tests run a real host
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-009
+
+**TL;DR.** `tests/Portunus.Tests` and `tests/Portunus.Testing.Tests` take
+`Microsoft.Extensions.Hosting`, already in the table for the agent, so a test of
+`AddPortunus` and `AddPortunusTesting` runs a real host's start, its hosted
+lifecycle service and its health checks, as a host meets them. Found at phase 2: the test
+projects held no service container, and one written by hand could not build what the
+options and the health checks register without reflection (PRT-ENG-004).
+
+*Rejected:*
+- **The container package alone:** it builds the services but runs no host start, which
+  is where the client is made (PRT-LIB-003).
+- **A container written by hand:** reflection, which the conventions refuse.
+
+**Propagated to:**
+- `06` PRT-ENG-009 (the row).
