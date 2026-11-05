@@ -354,5 +354,6 @@ public sealed class RepositoryLayoutTests
         Assert.Empty(PackageRules.AllowListViolations(fixture.Root));
         Assert.Empty(PackageRules.MockingViolations(fixture.Root));
         Assert.Empty(ReferenceRules.ReferenceViolations(fixture.Root));
+        Assert.Empty(ScannerConfigurationRules.Violations(fixture.Root));
     }
 }
