@@ -40,6 +40,9 @@ internal static class ReferenceRules
     /// <summary>The test packages of <c>06</c> PRT-ENG-009.</summary>
     internal static IReadOnlyList<string> TestPackages { get; } = ["xunit.v3"];
 
+    /// <summary>The test projects that may also reference <c>Microsoft.Extensions.Hosting</c>, to run a real host (<c>06</c> PRT-ENG-009, P-025).</summary>
+    private static readonly IReadOnlyList<string> HostTestProjects = [Packages.TestProject(Packages.Client), Packages.TestProject(Packages.Testing)];
+
     /// <summary>
     /// The library's own projects each part's project may reference, by the rows phase 0 builds:
     /// the agent's row comes in phase 3, the tool's in phase 4 and the adapters' in phase 5 (plan).
@@ -74,7 +77,7 @@ internal static class ReferenceRules
             }
 
             IReadOnlyList<string> allowedProjects = shipped ? AllowedProjects.GetValueOrDefault(project.Name, []) : AllowedTestProjects(project.Name);
-            IReadOnlyList<string> allowedPackages = shipped ? AllowedPackages.GetValueOrDefault(project.Name, []) : TestPackages;
+            IReadOnlyList<string> allowedPackages = shipped ? AllowedPackages.GetValueOrDefault(project.Name, []) : AllowedTestPackages(project.Name);
 
             foreach (string reference in project.ProjectReferences.Where(reference => !allowedProjects.Contains(reference, StringComparer.Ordinal)))
             {
@@ -221,6 +224,11 @@ internal static class ReferenceRules
             _ => [],
         };
         return allowed.Contains(grantee, StringComparer.Ordinal);
+    }
+
+    private static IReadOnlyList<string> AllowedTestPackages(string testProject)
+    {
+        return HostTestProjects.Contains(testProject, StringComparer.Ordinal) ? [.. TestPackages, "Microsoft.Extensions.Hosting"] : TestPackages;
     }
 
     private static IReadOnlyList<string> AllowedTestProjects(string testProject)
