@@ -292,7 +292,9 @@ a process's socket starts the harness as `client` under `setpriv` as the declare
 (P-030). The fake `op`'s rate-limited scenario is written from the documented `(429)`
 class, and its scenario of a version other than the pinned one from the recorded version
 with the version changed, each marked as not recorded; every other scenario is recorded
-by the owner (P-028). An
+by the owner's run of `build/check-real-op.ps1` against the real `op` on the owner's own
+computer, which records them afresh before each release and compares them with those
+committed (P-028, P-043). An
 acceptance-criterion test is named `ITEM_ACn_Outcome`
 (`PRT_AGT_007_AC2_UndeclaredAddressIsDenied`); every other test
 `Method_Scenario_Outcome`. No mocking package. The fakes are hand-written: the fake `op`
@@ -304,7 +306,7 @@ project, answering recorded answers on a real socket; and `Portunus.Testing`'s o
 Time is a test `TimeProvider`. Every criterion a test can decide has one; the rest are
 named in the phase report with how they were checked.
 
-*Source: P-005, P-016*
+*Source: P-005, P-016, P-043*
 
 **Acceptance criteria**
 1. No mocking package is referenced.
@@ -398,7 +400,9 @@ and MinVer SHALL derive the version from the tag.
   an empty `## [Unreleased]`; and `RELEASE-NOTES.md`. In its pull request only `docs:`
   commits that change nothing outside `docs/` follow it.
 - **Releases:** a release is a tag `v<V>` on the release commit, pushed once the pull
-  request's merge has brought that commit into the default branch, by the implementer or,
+  request's merge has brought that commit into the default branch and the owner's run of
+  `build/check-real-op.ps1` on that commit has ended `same`, the tag's message carrying
+  the run's last line (P-043), by the implementer or,
   where the machine's permissions refuse it the push, by the owner; a release candidate on
   the lead's message, a final release on the owner's (P-017). The pipeline's release job
   runs only for such a tag, after the gates job has passed on it, and is the one job that
@@ -421,7 +425,7 @@ and MinVer SHALL derive the version from the tag.
   what catches an SDK that changes those names; an adapter's dependency on its sibling is
   written `[v]` in `Directory.Packages.props`.
 
-*Source: P-016, P-017*
+*Source: P-016, P-017, P-043*
 
 **Acceptance criteria**
 1. A commit message outside the rule, and a behaviour-changing commit without a changelog

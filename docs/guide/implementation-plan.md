@@ -39,6 +39,7 @@ default and limit. `decision-log.md` is rationale.
 | 4 | The push and the tool | `02` all; `04` PRT-LIB-001 (the tool's row); `06` PRT-ENG-001 (the fake `ssh`) | A push reads through the fake `op`, refuses a broken vault before `ssh` runs, reaches the agent through `receive`, fills a waiting agent, replaces a ready one only with `--replace`, refuses another vault's set, and shows no value; `check` and `status` answer as given; a `push` agent waits for a push after every start |
 | 5 | The adapters | `00` PRT-OVR-002; `04` PRT-LIB-006, PRT-LIB-001 (the adapters' rows); `03` PRT-ROT-001, PRT-ROT-002; `06` PRT-ENG-001 (`vendor/`), PRT-ENG-009 (the siblings' packages) | Each sibling's `ISecretSource` answers its secrets from the fixed client in the sibling's own types and forms, its refusals naming the secret; a provider's item is read where configured; Janus gets its current version and Hermes every version in order |
 | 6 | Release gate, sample host and release 1.0.0-rc.1 | `04` PRT-LIB-007 (the compatibility gate; criteria 1 and 2); `06` PRT-ENG-001 (the sample host, and its gate of PRT-ENG-012), PRT-ENG-011 (the release commit's checks, criteria 2 and 3; the release job, criterion 4); `04` PRT-LIB-001 for the sample host's row; `05` PRT-OPS-003 and `RELEASE-NOTES.md`; `08` PRT-THR-001, PRT-THR-002, PRT-THR-003, PRT-THR-005, the checklist attached; `00` PRT-OVR-003. The release commit `chore: release 1.0.0-rc.1` comes in the same pull request once the review has passed, on the lead's message, and the tag `v1.0.0-rc.1` after its merge | The sample host builds from the packages packed from the same commit and its tests pass in the gate; a release commit outside its rule fails the gate; version 1.0.0-rc.1 of every package, both agent executables, the unit files, the checklist and `SHA256SUMS` on the tag's release, marked a pre-release, with its changelog and release notes |
+| 7 | The real `op` on the owner's computer | `06` PRT-ENG-008 (`build/check-real-op.ps1` in place of `build/record-op-scenarios.ps1`; the recorded scenarios from the owner's first run, and the tests phases 3 and 4 left waiting on them), PRT-ENG-011 (the release's wait on the run, checked by the lead) (P-043) | The run ends `same` on files equal to those committed, each instant set aside; `changed` with the new files in place and the `integration` and `linux` tests run on them; `failed`, with nothing left behind, on a finding of P-035 or an `op` other than 2.41.1; every criterion phases 3 and 4 left waiting on the recordings has its test |
 
 **Waiting on inputs.**
 - Phase 0: the name the packages carry as their authors, which the lead's first message
@@ -47,7 +48,8 @@ default and limit. `decision-log.md` is rationale.
   vault of dummy values and a test service account, which the lead's message hands over:
   the JSON of `op item list` and of `op item get` for items of each layout case, and the
   standard error and exit code of a rate-limited call, of a revoked token and of an
-  unreachable network (P-005, P-006). No scenario holds a real secret.
+  unreachable network (P-005, P-006). No scenario holds a real secret. From P-043 they
+  come from the owner's first run of phase 7's script.
 - Phase 4: the owner's check by hand, on the owner's Windows PC (macOS and Linux named in
   the report as not yet checked by hand until the owner has one to check on), that a push
   prompts through the 1Password app and that none of its `op` commands writes a value to
@@ -56,6 +58,9 @@ default and limit. `decision-log.md` is rationale.
   lead's message names with their release tags (P-022).
 - Phase 6's release commit and tag: the lead's message to release a release candidate,
   after the review; a final release, the owner's (P-017).
+- Phase 7: the owner's first run of `build/check-real-op.ps1`, once the script is merged,
+  whose files the lead's message hands over; then, before each later release, the owner's
+  run on the release commit (P-043).
 
 ## 4. Phase report
 
