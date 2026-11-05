@@ -917,6 +917,13 @@
           "Portunus.Core": "[1.0.0, )"
         }
       },
+      "portunus.themis": {
+        "type": "Project",
+        "dependencies": {
+          "Portunus": "[1.0.0, )",
+          "Themis.Core": "[1.0.0-rc.2, 1.0.0-rc.2]"
+        }
+      },
       "Hermes.Core": {
         "type": "CentralTransitive",
         "requested": "[1.0.0-rc.6, 1.0.0-rc.6]",
@@ -1088,6 +1095,12 @@
         "dependencies": {
           "System.Security.Cryptography.Pkcs": "10.0.14"
         }
+      },
+      "Themis.Core": {
+        "type": "CentralTransitive",
+        "requested": "[1.0.0-rc.2, 1.0.0-rc.2]",
+        "resolved": "1.0.0-rc.2",
+        "contentHash": "fS+tWxiRvKpXM9MsBttflh7jN6cRWPQb6njNP4z47Avtbu5f0T8sqcWUIqgA+MiMsvRCg3Z5k9HAOob7wC2wRw=="
       }
     }
   }

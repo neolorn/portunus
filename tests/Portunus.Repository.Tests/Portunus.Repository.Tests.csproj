@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\src\Portunus\Portunus.csproj" />
     <ProjectReference Include="..\..\src\Portunus.Janus\Portunus.Janus.csproj" />
     <ProjectReference Include="..\..\src\Portunus.Hermes\Portunus.Hermes.csproj" />
+    <ProjectReference Include="..\..\src\Portunus.Themis\Portunus.Themis.csproj" />
     <ProjectReference Include="..\..\src\Portunus.Testing\Portunus.Testing.csproj" />
     <ProjectReference Include="..\..\src\Portunus.Cli\Portunus.Cli.csproj" />
     <ProjectReference Include="..\..\src\Portunus.Agent\Portunus.Agent.csproj" />
