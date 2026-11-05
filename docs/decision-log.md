@@ -1051,7 +1051,8 @@ against the real one comes before each release; the fake stays for the pipeline.
   `same`, `changed` or `failed`. With `changed`, it writes the new files in place of the
   committed ones and runs the `integration` and `linux` tests on them
   (`build/gates/gate-tests.ps1`), whose result it prints. The written scenarios (P-028)
-  are not run, and stay as they are.
+  are not run, and the run never writes them: they are written once, in phase 7's second
+  part, from the owner's first run's files in the form P-028 gives, and stay as they are.
 - **The release.** A release's tag is pushed only after the owner's run on the release
   commit ended `same`, and the tag's message carries that line. `changed` holds the
   release: the new files come in a `test:` commit, with whatever the agent or the tool needs
