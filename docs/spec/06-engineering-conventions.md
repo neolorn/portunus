@@ -293,7 +293,8 @@ acceptance-criterion test is named `ITEM_ACn_Outcome`
 (`PRT_AGT_007_AC2_UndeclaredAddressIsDenied`); every other test
 `Method_Scenario_Outcome`. No mocking package. The fakes are hand-written: the fake `op`
 and the fake `ssh` of `tests/Portunus.Fakes` (PRT-ENG-001), whose `op` scenarios hold the
-pinned `op`'s output as recorded from a test vault of dummy values (P-005) and whose `ssh`
+pinned `op`'s output as recorded from a test vault of dummy values (P-005), every
+1Password identifier replaced by a stable placeholder of its form (P-035), and whose `ssh`
 runs the command it is given on the same machine; a fake agent in the client's test
 project, answering recorded answers on a real socket; and `Portunus.Testing`'s own types.
 Time is a test `TimeProvider`. Every criterion a test can decide has one; the rest are

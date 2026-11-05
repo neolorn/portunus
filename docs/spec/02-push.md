@@ -61,7 +61,8 @@ or showing it.
 Nothing of a value reaches the screen, a file, an argument or an environment variable on
 either computer. `--vault` and `--instance` are checked against their rules (`00`
 section 1.5; `03` PRT-VLT-001) before anything runs, `secrets.cli.inputinvalid`,
-`details.member`, since the instance is part of the remote command.
+`details.member` the option as written (`--vault`, P-033), since the instance is part of
+the remote command.
 
 *Source: P-005, P-009*
 

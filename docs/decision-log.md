@@ -800,3 +800,57 @@ review of phase 3: the agent served such a connection, unchecked.
 **Propagated to:**
 - `01` PRT-AGT-006 (the peer check).
 
+## P-033 — The tool names an option as it is written
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-PSH-002
+
+**TL;DR.** `secrets.cli.inputinvalid`'s `details.member` names the option as the owner
+types it, with its dashes (`--vault`, `--to`, `--instance`, `--account`), as the agent's
+refusals name a configuration key as the file writes it. Found at phase 4.
+
+*Rejected:*
+- **The bare name (`vault`):** names nothing the owner typed.
+
+**Propagated to:**
+- `02` PRT-PSH-002 (the refusal); `07` section 1 (the code's details).
+
+## P-034 — An SSH destination holds at most one `@`
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-PSH-002
+
+**TL;DR.** An `<ssh destination>` holds at most one `@`, so a host alone, or an alias of
+the owner's SSH configuration, is a destination, and `ssh` takes the user from that
+configuration. Found at phase 4: `07` section 3 read "one `@`".
+
+- **What stays.** The characters, the length and "not starting with `-`", so a destination
+  is never read as an option of `ssh`, which also gets it after `--`.
+
+*Rejected:*
+- **Exactly one `@`:** refuses the owner's aliases, which carry the user and the key.
+
+**Propagated to:**
+- `07` section 3 (the destination's rule).
+
+## P-035 — The recordings carry no identifier of the owner's account
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-008
+
+**TL;DR.** `build/record-op-scenarios.ps1` replaces every 1Password identifier it records
+(vaults, items, users, accounts) with a placeholder of the same form, the same identifier
+always the same placeholder across every file, before it writes anything. Found at
+phase 4: the scenario files go into a public repository, and a recording names the
+owner's vaults, items and user.
+
+- **The shape stays recorded:** keys, nesting, lengths and alphabets are 1Password's own,
+  so the agent still reads what the pinned `op` writes (P-005); only the values of
+  identifiers change.
+- **A run that finds an identifier left** in what it wrote, or a token, removes every
+  file it wrote and exits 1.
+
+*Rejected:*
+- **Recording as is:** the owner's account structure in a public repository, for nothing a
+  test needs.
+
+**Propagated to:**
+- `06` PRT-ENG-008 (the recordings).
+
