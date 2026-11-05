@@ -219,7 +219,7 @@ public sealed class ProjectReferenceTests
     public void PRT_LIB_001_AC1_SampleHostAndItsTestsWithinTheirRowAreAccepted()
     {
         using RepositoryFixture fixture = new();
-        WriteSample(fixture, "Microsoft.NET.Sdk.Web", """<PackageReference Include="Portunus" /><PackageReference Include="Portunus.Hermes" />""", """<PackageReference Include="Portunus.Testing" /><PackageReference Include="xunit.v3" /><ProjectReference Include="..\Sample\Sample.csproj" />""");
+        WriteSample(fixture, "Microsoft.NET.Sdk.Web", """<PackageReference Include="Portunus" /><PackageReference Include="Portunus.Hermes" />""", """<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" /><PackageReference Include="Portunus.Testing" /><PackageReference Include="xunit.v3" /><ProjectReference Include="..\Sample\Sample.csproj" />""");
 
         Assert.Empty(ReferenceRules.ReferenceViolations(fixture.Root));
     }
@@ -229,7 +229,7 @@ public sealed class ProjectReferenceTests
     [InlineData("Microsoft.NET.Sdk.Web", """<PackageReference Include="Microsoft.Extensions.Hosting" />""", "", "samples/Sample/Sample.csproj references the package Microsoft.Extensions.Hosting, which PRT-LIB-001 does not allow it.")]
     [InlineData("Microsoft.NET.Sdk.Web", """<ProjectReference Include="..\..\src\Portunus\Portunus.csproj" />""", "", "samples/Sample/Sample.csproj references the project Portunus, which PRT-LIB-001 does not allow it.")]
     [InlineData("Microsoft.NET.Sdk.Web", """<FrameworkReference Include="Microsoft.AspNetCore.App" />""", "", "samples/Sample/Sample.csproj references the framework Microsoft.AspNetCore.App, which PRT-LIB-001 gives the sample host only through the Web SDK.")]
-    [InlineData("Microsoft.NET.Sdk.Web", "", """<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />""", "samples/Sample.Tests/Sample.Tests.csproj references the package Microsoft.AspNetCore.Mvc.Testing, which PRT-LIB-001 does not allow it.")]
+    [InlineData("Microsoft.NET.Sdk.Web", "", """<PackageReference Include="Microsoft.Extensions.Hosting" />""", "samples/Sample.Tests/Sample.Tests.csproj references the package Microsoft.Extensions.Hosting, which PRT-LIB-001 does not allow it.")]
     [InlineData("Microsoft.NET.Sdk.Web", "", """<ProjectReference Include="..\..\tests\Portunus.Fakes\Portunus.Fakes.csproj" />""", "samples/Sample.Tests/Sample.Tests.csproj references the project Portunus.Fakes, which PRT-LIB-001 does not allow it.")]
     public void PRT_LIB_001_AC1_SampleReferenceOutsideItsRowIsFound(string sdk, string host, string tests, string expected)
     {

@@ -42,6 +42,8 @@ internal static class ReferenceRules
 
     /// <summary>The test packages of <c>06</c> PRT-ENG-009.</summary>
     internal static IReadOnlyList<string> TestPackages { get; } = ["xunit.v3"];
+    /// <summary>The test package of <c>06</c> PRT-ENG-009 the sample host's tests alone take, to start it (P-042).</summary>
+    internal static IReadOnlyList<string> SampleTestPackages { get; } = ["Microsoft.AspNetCore.Mvc.Testing"];
 
     /// <summary>The test projects that may also reference <c>Microsoft.Extensions.Hosting</c>, to run a real host (<c>06</c> PRT-ENG-009, P-025, P-039): the client's, the fixed client's and each adapter's.</summary>
     private static readonly IReadOnlyList<string> HostTestProjects =
@@ -149,12 +151,12 @@ internal static class ReferenceRules
     /// Answers each reference of a project of <c>samples/</c> that its row does not allow
     /// (P-040): the sample host takes the packed packages and the ASP.NET Core shared framework
     /// through the Web SDK, no other project and no framework by a reference of its own; its
-    /// test project takes the packed packages, the sample host and the test packages.
+    /// test project takes the packed packages, the sample host and the test packages, the factory's among them (P-042).
     /// </summary>
     private static IEnumerable<string> SampleViolations(ProjectFile project)
     {
         bool tests = project.Name.EndsWith(".Tests", StringComparison.Ordinal);
-        IReadOnlyList<string> packages = tests ? [.. Packages.Packed, .. TestPackages] : Packages.Packed;
+        IReadOnlyList<string> packages = tests ? [.. Packages.Packed, .. TestPackages, .. SampleTestPackages] : Packages.Packed;
         string host = tests ? project.Name[..^".Tests".Length] : string.Empty;
 
         if (!tests && !string.Equals(project.Document.Root!.Attribute("Sdk")?.Value, WebSdk, StringComparison.Ordinal))
