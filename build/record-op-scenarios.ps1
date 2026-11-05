@@ -13,10 +13,16 @@
     files. It then writes the two scenarios P-028 has written rather than recorded (a rate
     limit, and a version other than the pinned one), each marked as not recorded.
 
-    It never prints a value, a token or op's output: it prints only the files it writes and the
-    exit codes. The tokens are read without echo, held only for op's environment, and never
-    written. Every file it writes is checked for both tokens, and all of them are removed if
-    either is found.
+    It keeps everything in memory until the end, then replaces every 1Password identifier it
+    recorded (a vault's, an item's, a user's, an account's, a field's and a section's) with a
+    placeholder of the same length and alphabet, the same identifier always the same placeholder
+    across every file, and an account's sign-in address with a placeholder address (P-035). A
+    run that finds an identifier left, or either token, writes nothing, removes anything it
+    wrote, and exits 1.
+
+    It never prints a value, a token, an identifier or op's output: it prints only the files it
+    writes and the exit codes. The tokens are read without echo, held only for op's environment,
+    and never written.
 .PARAMETER Repository
     The repository to write into; by default, this one.
 #>
@@ -32,6 +38,15 @@ $pinned = '2.41.1'
 $fakes = Join-Path $Repository 'tests' 'Portunus.Fakes'
 $config = Join-Path $Repository 'tmp' 'record-op-scenarios'
 $written = [System.Collections.Generic.List[string]]::new()
+
+# Every file, by its name, in memory until every identifier is replaced and every check passed.
+$staged = [ordered]@{}
+
+# A 1Password identifier's form: 26 ASCII letters and digits, alone between other characters.
+$identifierForm = '(?<![A-Za-z0-9])[A-Za-z0-9]{26}(?![A-Za-z0-9])'
+
+# An account's sign-in address: a name under 1Password's own domains.
+$addressForm = '(?<![A-Za-z0-9.-])([A-Za-z0-9-]+)(\.1password\.(?:com|ca|eu))'
 
 $op = (Get-Command op -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1).Source
 if (-not $op) {
@@ -92,11 +107,134 @@ function Get-Matched([string[]] $Arguments) {
 }
 
 function Write-Fakes([string] $Name, [byte[]] $Bytes) {
-    $path = Join-Path $fakes $Name
-    [System.IO.File]::WriteAllBytes($path, $Bytes)
-    $written.Add($path)
-    Write-Host "wrote tests/Portunus.Fakes/$Name"
+    $staged[$Name] = [System.Text.Encoding]::UTF8.GetString($Bytes)
+    Write-Host "recorded tests/Portunus.Fakes/$Name"
 }
+
+# Gathers each identifier of a JSON document: the string of a member named id, or ending in _id,
+# _by or account, of an identifier's form. An id of another form, long enough to be one, stops
+# the run, since this script would not know to replace it.
+function Add-Identifiers([object] $Node, [string] $Name, [System.Collections.Generic.HashSet[string]] $Found) {
+    if ($Node -is [System.Collections.IEnumerable] -and $Node -isnot [string]) {
+        foreach ($element in $Node) {
+            Add-Identifiers $element $Name $Found
+        }
+    }
+    elseif ($Node -is [System.Management.Automation.PSCustomObject]) {
+        foreach ($member in $Node.PSObject.Properties) {
+            Add-Identifiers $member.Value $member.Name $Found
+        }
+    }
+    elseif ($Node -is [string] -and ($Name -eq 'id' -or $Name -match '(_id|_by|account)$')) {
+        if ($Node -cmatch "^$identifierForm`$") {
+            $Found.Add($Node) | Out-Null
+        }
+        elseif ($Name -eq 'id' -and $Node -cmatch '^[A-Za-z0-9]{20,}$') {
+            throw 'An identifier of a form this script does not know was recorded; nothing is written.'
+        }
+    }
+}
+
+# A placeholder of the identifier's form: its length, in letters alone, upper case where it has
+# upper case letters: x, then the identifier's number written in four letters, a for 0.
+function Get-Placeholder([string] $Identifier, [int] $Number) {
+    $letters = [char[]]::new(4)
+    for ($index = 3; $index -ge 0; $index--) {
+        $letters[$index] = [char]([int][char]'a' + ($Number % 26))
+        $Number = [math]::Floor($Number / 26)
+    }
+
+    $placeholder = ('x' * ($Identifier.Length - 4)) + [string]::new($letters)
+    if ($Identifier -cmatch '[A-Z]') { $placeholder.ToUpperInvariant() } else { $placeholder }
+}
+
+# Replaces every identifier and sign-in address in every staged file (P-035), checks that none,
+# and neither token, is left, and only then writes the files; a check that fails after a write
+# removes every file written.
+function Save-Staged([string[]] $Tokens) {
+    $identifiers = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    foreach ($name in @($staged.Keys)) {
+        if ($name -like '*.out') {
+            $document = $null
+            try {
+                $document = $staged[$name] | ConvertFrom-Json -Depth 64
+            }
+            catch {
+                # Not JSON: op's version, which holds no identifier.
+            }
+
+            if ($null -ne $document) {
+                Add-Identifiers $document '' $identifiers
+            }
+        }
+    }
+
+    $replacements = [ordered]@{}
+    $number = 0
+    foreach ($identifier in ($identifiers | Sort-Object)) {
+        $number++
+        $replacements[$identifier] = Get-Placeholder $identifier $number
+    }
+
+    $addresses = @{}
+    foreach ($name in @($staged.Keys)) {
+        $text = $staged[$name]
+        foreach ($identifier in $replacements.Keys) {
+            $text = $text.Replace($identifier, $replacements[$identifier])
+        }
+
+        $text = [regex]::Replace($text, $addressForm, {
+                param($match)
+                $account = $match.Groups[1].Value
+                if (-not $addresses.ContainsKey($account)) {
+                    $addresses[$account] = 'account' + ($addresses.Count + 1).ToString([System.Globalization.CultureInfo]::InvariantCulture)
+                }
+
+                $addresses[$account] + $match.Groups[2].Value
+            })
+        $staged[$name] = $text
+    }
+
+    $placeholders = [System.Collections.Generic.HashSet[string]]::new([string[]] @($replacements.Values), [System.StringComparer]::Ordinal)
+    foreach ($name in @($staged.Keys)) {
+        $text = $staged[$name]
+        foreach ($token in $Tokens) {
+            if ($token -and $text.Contains($token)) {
+                throw "tests/Portunus.Fakes/$name held a token; nothing is written."
+            }
+        }
+
+        foreach ($match in [regex]::Matches($text, $identifierForm)) {
+            if (-not $placeholders.Contains($match.Value)) {
+                throw "tests/Portunus.Fakes/$name held an identifier left unreplaced; nothing is written."
+            }
+        }
+    }
+
+    Write-Host "  $($replacements.Count) identifiers and $($addresses.Count) sign-in addresses replaced"
+    try {
+        foreach ($name in $staged.Keys) {
+            $path = Join-Path $fakes $name
+            [System.IO.File]::WriteAllText($path, $staged[$name], [System.Text.UTF8Encoding]::new($false))
+            $written.Add($path)
+            Write-Host "wrote tests/Portunus.Fakes/$name"
+        }
+
+        # What was written is read again and checked again.
+        foreach ($path in $written) {
+            $text = [System.IO.File]::ReadAllText($path)
+            $left = @([regex]::Matches($text, $identifierForm) | Where-Object { -not $placeholders.Contains($_.Value) })
+            if ($left.Count -gt 0 -or @($Tokens | Where-Object { $_ -and $text.Contains($_) }).Count -gt 0) {
+                throw 'A written file held an identifier or a token.'
+            }
+        }
+    }
+    catch {
+        $written | ForEach-Object { Remove-Item -LiteralPath $_ -Force -ErrorAction SilentlyContinue }
+        throw "$($_.Exception.Message) Every file written was removed."
+    }
+}
+
 
 function Write-Scenario([string] $Name, [bool] $Recorded, [object[]] $Commands) {
     $scenario = [ordered]@{ recorded = $Recorded; commands = $Commands }
@@ -216,15 +354,8 @@ try {
     Write-Fakes 'wrong-version.out' ([System.Text.Encoding]::UTF8.GetBytes($versionText.Replace($pinned, '2.41.0')))
     Write-Scenario 'wrong-version' $false @((New-Command @('--version') 'wrong-version.out' $null 0))
 
-    # No file may hold either token; where one does, every file written is removed.
-    foreach ($path in $written) {
-        $text = [System.IO.File]::ReadAllText($path)
-        if (($token -and $text.Contains($token)) -or ($revoked -and $text.Contains($revoked))) {
-            $written | ForEach-Object { Remove-Item -LiteralPath $_ -Force }
-            throw 'A written file held a token; every file written was removed.'
-        }
-    }
-
+    Write-Host 'Replacing the identifiers'
+    Save-Staged @($token, $revoked)
     Write-Host "Done: $($written.Count) files written under tests/Portunus.Fakes/."
 }
 finally {
