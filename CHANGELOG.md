@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.1] - 2026-11-05
+
 ### Added
 
 - `SecretAddress`, `Secret`, `AgentStatus`, `Result`, `Result<T>`, `Failure`, `SecretsStartupException`, `ISecretClient`, `AgentState`, `WaitReason` and `SetSource`, the public types of `Portunus.Core`.
@@ -33,3 +35,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A cancelled `op` or `ssh` command of the tool killed with every process it started (`02` PRT-PSH-002).
 - `Portunus.Hermes`, Hermes's `ISecretSource` over the client: each name at its address, the table's base64 names decoded, its text names and any name it does not list passed as UTF-8 text, every live version in ascending order (`04` PRT-LIB-006, `03` PRT-ROT-002, P-037).
 - `Portunus.Janus`, Janus's `ISecretSource` over the client: its key sets decoded and checked before Janus's types are built, its credentials as their bytes, a provider's signing credential read from its JSON object, and each failure answered as Janus's `model.startup.secretunavailable` naming the secret (`04` PRT-LIB-006, `03` PRT-ROT-002, P-036).
+- `Portunus.Themis`, Themis's `ISecretSource` over the client: each name at its address, `connection` and any name the table does not list passed as UTF-8 text, every live version in ascending order (`04` PRT-LIB-006, P-037).

@@ -158,6 +158,52 @@ internal static class PackageRules
         return violations;
     }
 
+    /// <summary>Each adapter with the sibling's package it builds against (<c>04</c> PRT-LIB-001, P-036).</summary>
+    internal static FrozenDictionary<string, string> AdapterSiblings { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        [Packages.Janus] = "Janus.Hosting",
+        [Packages.Hermes] = "Hermes.Core",
+        [Packages.Themis] = "Themis.Core",
+    }.ToFrozenDictionary(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Answers each adapter of the repository at <paramref name="root"/> that does not build
+    /// against its sibling's package as released (<c>00</c> PRT-OVR-002): its lockfile resolving
+    /// the package directly at the version of <c>07</c> section 7, and <c>vendor/</c> holding that
+    /// release's file, whose SHA-256 the vendored files' check holds to <c>vendor/SHA256SUMS</c>.
+    /// </summary>
+    internal static IEnumerable<string> SiblingBuildViolations(string root)
+    {
+        foreach ((string adapter, string sibling) in AdapterSiblings.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            string version = SiblingVersions[sibling];
+            string lockFile = Path.Combine(root, "src", adapter, "packages.lock.json");
+            string? resolved = null;
+            if (File.Exists(lockFile))
+            {
+                using JsonDocument document = JsonDocument.Parse(File.ReadAllText(lockFile));
+                foreach (JsonProperty framework in document.RootElement.GetProperty("dependencies").EnumerateObject())
+                {
+                    if (framework.Value.TryGetProperty(sibling, out JsonElement entry)
+                        && string.Equals(entry.GetProperty("type").GetString(), "Direct", StringComparison.Ordinal))
+                    {
+                        resolved = entry.GetProperty("resolved").GetString();
+                    }
+                }
+            }
+
+            if (!string.Equals(resolved, version, StringComparison.Ordinal))
+            {
+                yield return $"src/{adapter} does not build against {sibling} {version}: its lockfile resolves {resolved ?? "no direct dependency on it"}.";
+            }
+
+            if (!File.Exists(Path.Combine(root, "vendor", $"{sibling}.{version}.nupkg")))
+            {
+                yield return $"vendor/ does not hold {sibling}.{version}.nupkg, the release src/{adapter} builds against.";
+            }
+        }
+    }
+
     private static IReadOnlyList<string> PackageVersions(string root)
     {
         string props = Path.Combine(root, "Directory.Packages.props");
