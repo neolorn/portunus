@@ -37,7 +37,7 @@ Phase 4:
 
 **`06` PRT-ENG-001** and **PRT-ENG-008**: the fakes act as `ssh`, running the command after the destination on this machine (`tests/Portunus.Fakes`); the fakes' executable is copied as `op` and `ssh` at its build; the launcher of P-029 (`FakeOp`); the harness's `client` role (P-030).
 
-**The owner's recordings**: `build/record-op-scenarios.ps1`, run once by the owner. Tried here against the fake `op` in `tmp/`, through every case.
+**The owner's recordings** (P-035): `build/record-op-scenarios.ps1`, run once by the owner. It keeps what it records in memory and replaces every 1Password identifier (a vault's, an item's, a user's, an account's, a field's and a section's, gathered from the members `id`, `*_id`, `*_by` and `*account`) with a placeholder of its length and case in letters alone, the same identifier always the same placeholder across every file, the commands' arguments and the `op://` references included, and an account's sign-in address with `account<n>`. It writes nothing where a token, or any string of an identifier's form but a placeholder, is left, and it reads what it wrote again, removing all of it on a finding. Tried here against the fake `op` in `tmp/` through every case, and through its two refusals, an identifier in a member it does not gather and a token in what `op` wrote, each of which wrote nothing and exited 1.
 
 ## Items not built
 
@@ -45,6 +45,15 @@ Waiting on the owner's recordings (P-005, P-028), which `build/record-op-scenari
 - `01` PRT-AGT-002 criterion 1's `secrets.agent.opversion` naming a version found, and its `secrets.agent.tokenunavailable` through the start, which runs only after `op --version` answers the pinned version, so it needs the recorded `--version`; `TokenFile`'s rule is proven by unit tests above.
 - `01` PRT-AGT-003 criteria 1 to 4, PRT-AGT-004 criteria 1 to 3, the fetch's part of PRT-AGT-005 criterion 1, PRT-AGT-001 criterion 4.
 - `02` PRT-PSH-002 criteria 1 to 4, PRT-PSH-003 criterion 4, PRT-PSH-004 criterion 1.
+
+What the owner makes and runs:
+1. `op` 2.41.1 on the `PATH` of the owner's computer, the 1Password app's integration on, and PowerShell 7.
+2. A vault "Sample Test" of four Secure Note items, each field a custom text or password field with an obviously dummy value (`sample-value-1`, not a random-looking one, which the secret scan could take for a credential): `Themis` (`connection`, a note), `Janus` (`keys.1`, `keys.2`, `keys.3`, `keys.current` holding `2`, a note), `Hermes` (`token`, a note), `Ceres` (`password`, no note: the one warning).
+3. A vault "Sample Broken": `Themis` (`connection` and `bad label`, the one error, a note), `Hermes` (`token`, no note: the one warning).
+4. A service account `Portunus Test` with `read_items` on both vaults, its token at hand.
+5. A service account `Portunus Test Revoked` with `read_items` on "Sample Test", its token copied, then revoked.
+6. From the repository's root, `pwsh build/record-op-scenarios.ps1`: it asks for both tokens without echo, the 1Password app prompts for the tool's commands, and it asks for the network to be disconnected for one command and reconnected after.
+7. The files it writes under `tests/Portunus.Fakes/` handed over.
 
 The launcher, the fake and the scenarios' names are in place, so each of these is a test and no code. Their tests are not committed before the files: a test that fails until they land would fail the gate, and a skipped test is never left.
 
@@ -93,14 +102,14 @@ Phase 3's questions, answered:
 3. The token file's line ending: P-031. Built.
 4. The review's finding, a peer whose credentials cannot be read: P-032. Built.
 
-Asked in phase 4:
+Asked in phase 4, answered:
 
-5. **Tier 2: the spelling of `secrets.cli.inputinvalid`'s `details.member`.** Item: `02` PRT-PSH-002. `07` section 1 gives the detail `member` for "an option missing or outside its rule", and section 3 writes each option as `--vault`. Readings: (a) the option as section 3 writes it, `--vault`; (b) its name alone, `vault`. Smallest fix: one constant per option in `ToolArguments`. Built with (a), since every command of the tool checks its options first; nothing else depends on it.
-6. **Tier 2: an SSH destination's `@`.** Item: `07` section 3, "ASCII letters, digits, `.`, `-`, `_` and one `@`". Readings: (a) at most one, so `host` alone is a destination; (b) exactly one, so a user is always named. Smallest fix: one comparison in `ToolArguments.IsDestination`. Built with (a).
+5. **Tier 2: the spelling of `secrets.cli.inputinvalid`'s `details.member`.** Item: `02` PRT-PSH-002. `07` section 1 gives the detail `member` for "an option missing or outside its rule", and section 3 writes each option as `--vault`. Readings: (a) the option as section 3 writes it, `--vault`; (b) its name alone, `vault`. Smallest fix: one constant per option in `ToolArguments`. Answered by P-033: (a), as built.
+6. **Tier 2: an SSH destination's `@`.** Item: `07` section 3, "ASCII letters, digits, `.`, `-`, `_` and one `@`". Readings: (a) at most one, so `host` alone is a destination; (b) exactly one, so a user is always named. Smallest fix: one comparison in `ToolArguments.IsDestination`. Answered by P-034: (a), as built.
 
 ## Checks
 
-- The commit: the report's own commit, the head of `phase-04`, on `06fab73`; the branch stands on the lead's `c26f8d6`, on `370ee0e` of `phase-03`.
+- The commit: the report's own commit, the head of `phase-04`, on `3a40144`; the branch stands on the lead's `36ffdaa` and `c26f8d6`, on `370ee0e` of `phase-03`.
 - Fast checks on every commit: built in Release with warnings as errors and the analysers; `dotnet format --verify-no-changes`; the unit tests of the projects each commit changes; green.
-- Before the push: every unit test, the integration tests, the `linux` kind in the SDK's container, the agent's publish, the commit-message gate and the full-history secret scan, by `run-gates.ps1 -Base main -Head HEAD`.
+- Before the push: every unit test, the integration tests, the `linux` kind in the SDK's container, the agent's publish, the commit-message gate and the full-history secret scan, by `run-gates.ps1 -Base main -Head HEAD`: every gate passed on `ac0b659` but the commit-message gate, which finds one body line of `2c90ede` over 72 characters; the unpushed commits' replay that rewords it waits on the owner's decision, so nothing is pushed.
 - The gate of record: the pipeline's `gates` run on the report's own commit, whose identifier and result the message naming the pull request gives.
