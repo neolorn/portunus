@@ -36,10 +36,18 @@ internal static class PackageRules
     /// <summary>The element <c>Portunus.Cli</c> alone carries, its package type as a .NET tool, which the SDK writes of its own accord.</summary>
     private const string ToolPackageType = "packageTypes";
 
+    /// <summary>The siblings' packages at the versions of <c>07</c> section 7 (P-022, P-036).</summary>
+    internal static FrozenDictionary<string, string> SiblingVersions { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["Janus.Hosting"] = "1.0.0-rc.4",
+        ["Hermes.Core"] = "1.0.0-rc.6",
+        ["Themis.Core"] = "1.0.0-rc.2",
+    }.ToFrozenDictionary(StringComparer.Ordinal);
+
     /// <summary>
     /// Answers each dependency of a packed package on another of the library's packages that is
-    /// not the exact version packed, <c>[v]</c> (<c>04</c> PRT-LIB-001 criterion 2). An adapter's
-    /// dependency on its sibling's package comes with the adapters, in phase 5 (plan).
+    /// not the exact version packed, <c>[v]</c>, and of an adapter on its sibling's package that
+    /// is not the exact version of <c>07</c> section 7 (<c>04</c> PRT-LIB-001 criterion 2).
     /// </summary>
     internal static IEnumerable<string> DependencyViolations(IReadOnlyList<PackageManifest> manifests)
     {
@@ -56,6 +64,15 @@ internal static class PackageRules
                 else if (!string.Equals(dependency.Version, $"[{version}]", StringComparison.Ordinal))
                 {
                     yield return $"{manifest.Id} depends on {dependency.Id} at {dependency.Version}, not the exact version packed, [{version}].";
+                }
+            }
+
+            foreach (PackageDependency dependency in manifest.Dependencies.Where(dependency => SiblingVersions.ContainsKey(dependency.Id)))
+            {
+                string pinned = SiblingVersions[dependency.Id];
+                if (!string.Equals(dependency.Version, $"[{pinned}]", StringComparison.Ordinal))
+                {
+                    yield return $"{manifest.Id} depends on {dependency.Id} at {dependency.Version}, not the exact version of 07 section 7, [{pinned}].";
                 }
             }
         }

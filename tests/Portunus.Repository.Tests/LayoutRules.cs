@@ -16,6 +16,15 @@ internal static partial class LayoutRules
 {
     private const string NuGetOrg = "https://api.nuget.org/v3/index.json";
 
+    /// <summary>The folder of the siblings' packages, and its source's key in <c>nuget.config</c>.</summary>
+    private const string VendorSource = "vendor";
+
+    /// <summary>The list of the vendored files' SHA-256.</summary>
+    private const string VendorSums = "SHA256SUMS";
+
+    /// <summary>The identifiers <c>nuget.config</c> maps to <c>vendor/</c> (PRT-ENG-001, P-036).</summary>
+    private static readonly string[] VendorPatterns = ["Janus.*", "Hermes.Core", "Themis.Core"];
+
     /// <summary>The files at the repository's root (06 PRT-ENG-001).</summary>
     private static readonly IReadOnlyList<string> RootFiles =
         ["Portunus.sln", "Directory.Build.props", "Directory.Packages.props", "global.json", ".editorconfig", ".gitignore", "nuget.config", "CHANGELOG.md", "RELEASE-NOTES.md"];
@@ -238,9 +247,9 @@ internal static partial class LayoutRules
 
     /// <summary>
     /// Answers each part of the root <c>nuget.config</c> outside PRT-ENG-001: the sources
-    /// cleared, nuget.org the one source, and every package identifier mapped to it. The
-    /// siblings' identifiers are mapped to <c>vendor/</c> with the vendored packages, in
-    /// phase 5 (plan).
+    /// cleared, then nuget.org and <c>vendor/</c>; the siblings' identifiers (<c>Janus.*</c>,
+    /// <c>Hermes.Core</c>, <c>Themis.Core</c>) mapped to <c>vendor/</c> alone and every other
+    /// identifier to nuget.org alone (P-036).
     /// </summary>
     internal static IEnumerable<string> PackageSourceViolations(string root)
     {
@@ -259,23 +268,25 @@ internal static partial class LayoutRules
             yield return "nuget.config does not clear the package sources first.";
         }
 
-        List<XElement> added = [.. entries.Skip(1)];
-        bool nugetOrgAlone = added.Count == 1 && added[0].Name.LocalName is "add"
-            && string.Equals(added[0].Attribute("key")?.Value, "nuget.org", StringComparison.Ordinal)
-            && string.Equals(added[0].Attribute("value")?.Value, NuGetOrg, StringComparison.Ordinal);
-        if (!nugetOrgAlone)
+        string[] added = [.. entries.Skip(1).Select(entry => $"{entry.Name.LocalName} {entry.Attribute("key")?.Value} {entry.Attribute("value")?.Value}")];
+        if (!added.SequenceEqual([$"add nuget.org {NuGetOrg}", $"add {VendorSource} {VendorSource}"], StringComparer.Ordinal))
         {
-            yield return $"nuget.config does not add nuget.org, {NuGetOrg}, as its one source.";
+            yield return $"nuget.config does not add nuget.org, {NuGetOrg}, and {VendorSource}/ as its two sources.";
         }
 
-        List<XElement> mapped = [.. configuration.Element("packageSourceMapping")?.Elements() ?? []];
-        bool everyIdentifier = mapped.Count == 1 && mapped[0].Name.LocalName is "packageSource"
-            && string.Equals(mapped[0].Attribute("key")?.Value, "nuget.org", StringComparison.Ordinal)
-            && mapped[0].Elements().Count() == 1
-            && mapped[0].Elements().All(package => package.Name.LocalName is "package" && string.Equals(package.Attribute("pattern")?.Value, "*", StringComparison.Ordinal));
-        if (!everyIdentifier)
+        Dictionary<string, string[]> mapped = [];
+        foreach (XElement source in configuration.Element("packageSourceMapping")?.Elements() ?? [])
         {
-            yield return "nuget.config does not map every package identifier, \"*\", to nuget.org alone.";
+            string[] patterns = [.. source.Elements().Select(package => package.Name.LocalName is "package" ? package.Attribute("pattern")?.Value ?? string.Empty : string.Empty)];
+            mapped[source.Name.LocalName is "packageSource" ? source.Attribute("key")?.Value ?? string.Empty : string.Empty] = patterns;
+        }
+
+        bool mappedAsGiven = mapped.Count == 2
+            && mapped.TryGetValue("nuget.org", out string[]? everything) && everything.SequenceEqual(["*"], StringComparer.Ordinal)
+            && mapped.TryGetValue(VendorSource, out string[]? siblings) && siblings.Order(StringComparer.Ordinal).SequenceEqual(VendorPatterns.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        if (!mappedAsGiven)
+        {
+            yield return $"nuget.config does not map {string.Join(", ", VendorPatterns)} to {VendorSource}/ alone and every other identifier, \"*\", to nuget.org alone.";
         }
 
         foreach (XElement section in configuration.Elements().Where(section => section.Name.LocalName is not ("packageSources" or "packageSourceMapping")))
@@ -284,6 +295,54 @@ internal static partial class LayoutRules
         }
     }
 
+    /// <summary>
+    /// Answers each file of <c>vendor/</c> whose SHA-256 differs from <c>vendor/SHA256SUMS</c>
+    /// or that it does not list, and each line of it naming a file that is not there
+    /// (PRT-ENG-001 criterion 1).
+    /// </summary>
+    internal static IEnumerable<string> VendorViolations(string root)
+    {
+        string folder = Path.Combine(root, VendorSource);
+        if (!Directory.Exists(folder))
+        {
+            yield break;
+        }
+
+        string sums = Path.Combine(folder, VendorSums);
+        Dictionary<string, string> listed = new(StringComparer.Ordinal);
+        if (File.Exists(sums))
+        {
+            foreach (string line in File.ReadLines(sums).Where(line => line.Length > 0))
+            {
+                Match entry = SumLine().Match(line);
+                if (!entry.Success || !listed.TryAdd(entry.Groups["file"].Value, entry.Groups["hash"].Value))
+                {
+                    yield return $"vendor/{VendorSums} holds the line \"{line}\", which is not one SHA-256 and one file.";
+                }
+            }
+        }
+
+        foreach (string file in Directory.EnumerateFiles(folder).Select(Path.GetFileName).OfType<string>().Where(file => file != VendorSums).Order(StringComparer.Ordinal))
+        {
+            if (!listed.Remove(file, out string? hash))
+            {
+                yield return $"vendor/{file} is not listed in vendor/{VendorSums}.";
+            }
+            else
+            {
+                using FileStream stream = File.OpenRead(Path.Combine(folder, file));
+                if (!string.Equals(Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(stream)), hash, StringComparison.Ordinal))
+                {
+                    yield return $"vendor/{file}'s SHA-256 differs from vendor/{VendorSums}.";
+                }
+            }
+        }
+
+        foreach (string missing in listed.Keys.Order(StringComparer.Ordinal))
+        {
+            yield return $"vendor/{VendorSums} lists {missing}, which vendor/ does not hold.";
+        }
+    }
     /// <summary>Answers whether the root <c>.gitignore</c> lists <c>artifacts/packages/</c>, where the gate packs the packages.</summary>
     internal static IEnumerable<string> IgnoreViolations(string root)
     {
@@ -317,4 +376,8 @@ internal static partial class LayoutRules
 
     [GeneratedRegex(@"^Project\(""\{[0-9A-F-]+\}""\)\s*=\s*""[^""]+"",\s*""(?<path>[^""]+\.csproj)""", RegexOptions.Multiline)]
     private static partial Regex SolutionProjectPattern();
+
+    /// <summary>One line of <c>vendor/SHA256SUMS</c>, as <c>sha256sum</c> writes it: the hash, two spaces, the file.</summary>
+    [GeneratedRegex(@"^(?<hash>[0-9a-f]{64})  (?<file>[A-Za-z0-9._-]+)$")]
+    private static partial Regex SumLine();
 }

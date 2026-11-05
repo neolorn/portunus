@@ -34,8 +34,8 @@ internal static class ReferenceRules
     internal static IReadOnlyList<string> Hosting { get; } =
         ["Microsoft.Extensions.Hosting", "Microsoft.Extensions.Hosting.Systemd", "Microsoft.Extensions.Configuration.Json"];
 
-    /// <summary>The siblings' <c>Core</c> packages of <c>06</c> PRT-ENG-009, each of which its adapter alone may reference.</summary>
-    internal static IReadOnlyList<string> Siblings { get; } = ["Janus.Core", "Hermes.Core", "Themis.Core"];
+    /// <summary>The siblings' packages of <c>06</c> PRT-ENG-009, each of which its adapter alone may reference: <c>Janus.Hosting</c>, which carries <c>Janus.Core</c> (P-036), <c>Hermes.Core</c> and <c>Themis.Core</c>.</summary>
+    internal static IReadOnlyList<string> Siblings { get; } = ["Janus.Hosting", "Hermes.Core", "Themis.Core"];
 
     /// <summary>The test packages of <c>06</c> PRT-ENG-009.</summary>
     internal static IReadOnlyList<string> TestPackages { get; } = ["xunit.v3"];
@@ -52,6 +52,7 @@ internal static class ReferenceRules
         [Packages.Core] = [],
         [Packages.Client] = [Packages.Core],
         [Packages.Testing] = [Packages.Core, Packages.Client],
+        [Packages.Hermes] = [Packages.Client],
         [Packages.Cli] = [Packages.Core],
         [Packages.Agent] = [Packages.Core],
     }.ToFrozenDictionary(StringComparer.Ordinal);
@@ -62,6 +63,7 @@ internal static class ReferenceRules
         [Packages.Core] = [],
         [Packages.Client] = HostingAbstractions,
         [Packages.Testing] = [],
+        [Packages.Hermes] = ["Hermes.Core"],
         [Packages.Cli] = [],
         [Packages.Agent] = Hosting,
     }.ToFrozenDictionary(StringComparer.Ordinal);
