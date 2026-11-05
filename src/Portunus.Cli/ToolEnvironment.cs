@@ -37,13 +37,17 @@ internal sealed class ToolEnvironment(IReadOnlyDictionary<string, string> variab
         return new ToolEnvironment(variables);
     }
 
-    /// <summary>The first file named <paramref name="program"/> in a folder of the <c>PATH</c>, on Windows with an extension of <c>PATHEXT</c>; or none.</summary>
+    /// <summary>
+    /// The first file named <paramref name="program"/> in a folder of the <c>PATH</c>, on Windows
+    /// with an extension of <c>PATHEXT</c>; or none. A folder that is not an absolute path is
+    /// skipped, since it names the working directory, where a planted program would run.
+    /// </summary>
     internal string? Find(string program)
     {
         string[] names = OperatingSystem.IsWindows()
             ? [.. Value("PATHEXT", ".EXE;.CMD;.BAT;.COM").Split(';', StringSplitOptions.RemoveEmptyEntries).Select(extension => program + extension)]
             : [program];
-        foreach (string folder in Value("PATH", string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        foreach (string folder in Value("PATH", string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries).Where(Path.IsPathFullyQualified))
         {
             foreach (string name in names)
             {
