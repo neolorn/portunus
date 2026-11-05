@@ -320,11 +320,11 @@ the projects `04` PRT-LIB-001 allows.
 |---|---|---|
 | Hosting abstractions (`Portunus`) | `Microsoft.Extensions.DependencyInjection.Abstractions`, `Microsoft.Extensions.Configuration.Abstractions`, `Microsoft.Extensions.Configuration.Binder`, `Microsoft.Extensions.Options`, `Microsoft.Extensions.Options.ConfigurationExtensions`, `Microsoft.Extensions.Logging.Abstractions`, `Microsoft.Extensions.Hosting.Abstractions`, `Microsoft.Extensions.Diagnostics.HealthChecks` | MIT |
 | Hosting (`Portunus.Agent`) | `Microsoft.Extensions.Hosting`, `Microsoft.Extensions.Hosting.Systemd`, `Microsoft.Extensions.Configuration.Json` | MIT |
-| The siblings (the adapters) | `Janus.Hosting` and its dependencies from nuget.org, each listed in the allow-list (P-036); `Hermes.Core`, `Themis.Core`; the siblings' own from `vendor/` at the versions of `07` section 7 | The owner's own; each dependency's own, as listed |
+| The siblings (the adapters) | `Janus.Hosting` and its dependencies from nuget.org, each listed in the allow-list (P-036), with `System.Security.Cryptography.Xml` and `System.Security.Cryptography.Pkcs` pinned at 10.0.14 (P-038); `Hermes.Core`, `Themis.Core`; the siblings' own from `vendor/` at the versions of `07` section 7 | The owner's own; each dependency's own, as listed |
 | Public surface | `Microsoft.CodeAnalysis.PublicApiAnalyzers` (build-only) | MIT |
 | Versioning | `MinVer` (build-only) | Apache 2.0 |
 | Tests | `xunit.v3` | Apache 2.0 |
-| A host in the client's tests (`tests/Portunus.Tests`, `tests/Portunus.Testing.Tests`) | `Microsoft.Extensions.Hosting`, the agent's own row's package (P-025) | MIT |
+| A host in the client's and the adapters' tests (`tests/Portunus.Tests`, `tests/Portunus.Testing.Tests` and each adapter's test project) | `Microsoft.Extensions.Hosting`, the agent's own row's package (P-025, P-039) | MIT |
 
 Every package is taken at its latest stable release when added, the Microsoft packages at
 the release that matches the SDK's .NET 10 runtime, and its listing checked then (checked
@@ -347,7 +347,10 @@ taken as soon as it lands (checked in review).
 
 **Values (P-016).** NuGet's audit of every package, transitive ones included, runs in each
 restore (PRT-ENG-002), and its warnings fail the build. A security release of `op` is
-taken by a release of this library that moves its pinned version (`07` section 7).
+taken by a release of this library that moves its pinned version (`07` section 7). Where
+a sibling's package brings a version with an advisory, `Directory.Packages.props` pins the
+patched version by central transitive pinning, listed in the allow-list beside that
+sibling (P-038).
 
 *Source: P-005, P-016*
 

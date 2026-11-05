@@ -903,3 +903,48 @@ own, and answering none refuses the host's start wherever the package is used.
 **Propagated to:**
 - `04` PRT-LIB-006 (the Hermes and Themis table, and the unlisted name).
 
+
+## P-038 — Patched versions are pinned where a sibling brings a vulnerable one
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-009, PRT-ENG-010
+
+**TL;DR.** Where a sibling's package brings, transitively, a version with a published
+advisory, `Directory.Packages.props` pins the patched version through central transitive
+pinning (`CentralPackageTransitivePinningEnabled`), and the allow-list lists it beside
+that sibling. Found at phase 5: `Janus.Hosting` 1.0.0-rc.4 brings, through OpenIddict
+7.7.1, `System.Security.Cryptography.Xml` and `System.Security.Cryptography.Pkcs`
+10.0.11, with advisories; 10.0.14 of both is published.
+
+- **The pins:** `System.Security.Cryptography.Xml` and `System.Security.Cryptography.Pkcs`
+  10.0.14, the audit failing the build as before (PRT-ENG-010) if a later advisory
+  reaches them.
+- **Why here and not only in Janus.** Janus's hosts are ASP.NET Core applications: the
+  shared framework supplies both assemblies, so the restore prunes the packages and the
+  serviced runtime's copies run (Cura's auth server restores none of them). A class
+  library has no shared framework to prune them, so the adapter's restore sees them; the
+  pin keeps its own build and its packed dependencies clean, and its hosts lose nothing.
+- **What stays.** The audit, its warnings as errors, and the adapter's references
+  (P-036): the pins are versions, not references of the adapter's own.
+
+*Rejected:*
+- **Waiting for a Janus release that takes the patched versions:** Janus's hosts are not
+  exposed, and the adapter would wait on a release that changes nothing for them.
+- **References of the adapter's own to both packages:** outside its PRT-LIB-001 row.
+
+**Propagated to:**
+- `06` PRT-ENG-009 (the siblings' row) and PRT-ENG-010 (the pin).
+
+## P-039 — The adapters' tests run a real host
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-009
+
+**TL;DR.** The adapters' test projects take `Microsoft.Extensions.Hosting`, as the
+client's do (P-025), so PRT-LIB-006 criterion 4 is proven in a host built with the
+adapter's call alone. Found at phase 5.
+
+*Rejected:*
+- **Proving the criterion on the registration's service descriptors:** the criterion is
+  about what a host resolves, which the descriptors alone do not show.
+
+**Propagated to:**
+- `06` PRT-ENG-009 (the hosting row).
