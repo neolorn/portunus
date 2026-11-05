@@ -251,7 +251,7 @@ or closes the connection without an answer; it then answers and closes. A `read`
 address named by the declaration, answers:
 - while `waiting`: the state and its reason, so the client waits (`04` PRT-LIB-004);
 - while `ready`, where the set holds the address: the secret, its current version and
-  each version's value in base64 (a single value is version 1, current 1);
+  each version's value in base64url (P-023; a single value is version 1, current 1);
 - while `ready`, where it does not: `secrets.secret.unknown`.
 
 A request outside `07` section 6, or of a kind the socket does not take (a `push` on a

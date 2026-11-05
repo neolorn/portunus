@@ -66,6 +66,29 @@ public sealed class AssemblyContractTests
 
     [Theory]
     [MemberData(nameof(Assemblies))]
+    public void PRT_ENG_007_AC1_EveryCodeTheLibraryAnswersIsOneTheReferenceLists(string assembly)
+    {
+        Assert.Empty(NamingRules.CodeViolations(assembly, AssemblySurface.Strings(Path.Combine(AppContext.BaseDirectory, assembly))));
+    }
+
+    [Theory]
+    [MemberData(nameof(Assemblies))]
+    public void PRT_ENG_007_AC1_EveryEnumerationIsSpelledAsTheReferenceGivesIt(string assembly)
+    {
+        Assert.Empty(NamingRules.SpellingViolations(AssemblySurface.Enumerations(Path.Combine(AppContext.BaseDirectory, assembly))));
+    }
+
+    [Fact]
+    public void PRT_LIB_002_AC2_CoreDeclaresEveryTypeAndMemberOfItsTable()
+    {
+        string assembly = Path.Combine(AppContext.BaseDirectory, Packages.Core + ".dll");
+
+        Assert.Empty(PublicTypeTable.MissingTypes(Packages.Core, AssemblySurface.PublicTypes(assembly)));
+        Assert.Empty(PublicMemberTable.Violations(Packages.Core, RepositoryRoot.Combine("src", Packages.Core)));
+    }
+
+    [Theory]
+    [MemberData(nameof(Assemblies))]
     public void PRT_LIB_002_AC2_EveryPublicTypeIsOneTheTablesGive(string assembly)
     {
         Assert.Empty(PublicTypeTable.Violations(Path.GetFileNameWithoutExtension(assembly), AssemblySurface.PublicTypes(Path.Combine(AppContext.BaseDirectory, assembly))));

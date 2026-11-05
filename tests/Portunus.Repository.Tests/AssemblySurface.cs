@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
 namespace Portunus.Repository.Tests;
@@ -177,6 +178,100 @@ internal static class AssemblySurface
         }
 
         return imports;
+    }
+
+    /// <summary>
+    /// Every string the assembly's code holds: its IL's literals, from the user string heap, and
+    /// its string constants, which the compiler writes there in place of their uses.
+    /// </summary>
+    internal static IReadOnlyList<string> Strings(string assembly)
+    {
+        using FileStream stream = File.OpenRead(assembly);
+        using PEReader reader = new(stream);
+        MetadataReader metadata = reader.GetMetadataReader();
+        List<string> strings = [];
+
+        UserStringHandle handle = metadata.GetHeapSize(HeapIndex.UserString) > 1 ? MetadataTokens.UserStringHandle(1) : default;
+        while (!handle.IsNil)
+        {
+            strings.Add(metadata.GetUserString(handle));
+            handle = metadata.GetNextHandle(handle);
+        }
+
+        for (int row = 1; row <= metadata.GetTableRowCount(TableIndex.Constant); row++)
+        {
+            Constant constant = metadata.GetConstant(MetadataTokens.ConstantHandle(row));
+            if (constant.TypeCode == ConstantTypeCode.String)
+            {
+                BlobReader blob = metadata.GetBlobReader(constant.Value);
+                strings.Add(blob.ReadUTF16(blob.Length));
+            }
+        }
+
+        return strings;
+    }
+
+    /// <summary>
+    /// The public enumerations of the assembly, by full name, each with its members in the order
+    /// the metadata declares them and the spelling each member's <c>JsonStringEnumMemberName</c>
+    /// carries, or none where it carries none.
+    /// </summary>
+    internal static IReadOnlyDictionary<string, IReadOnlyList<(string Name, string? Spelling)>> Enumerations(string assembly)
+    {
+        using FileStream stream = File.OpenRead(assembly);
+        using PEReader reader = new(stream);
+        MetadataReader metadata = reader.GetMetadataReader();
+        Dictionary<string, IReadOnlyList<(string Name, string? Spelling)>> enumerations = new(StringComparer.Ordinal);
+
+        foreach (TypeDefinitionHandle handle in metadata.TypeDefinitions)
+        {
+            TypeDefinition type = metadata.GetTypeDefinition(handle);
+            if (!IsVisible(metadata, type) || Kind(metadata, type) != PublicTypeKind.Enumeration)
+            {
+                continue;
+            }
+
+            List<(string Name, string? Spelling)> members = [];
+            foreach (FieldDefinitionHandle fieldHandle in type.GetFields())
+            {
+                FieldDefinition field = metadata.GetFieldDefinition(fieldHandle);
+                if ((field.Attributes & FieldAttributes.Static) == 0)
+                {
+                    continue;
+                }
+
+                members.Add((metadata.GetString(field.Name), Spelling(metadata, field)));
+            }
+
+            enumerations[SignatureNames.Name(metadata, handle)] = members;
+        }
+
+        return enumerations;
+    }
+
+    /// <summary>The string a member's <c>JsonStringEnumMemberNameAttribute</c> carries, or none.</summary>
+    private static string? Spelling(MetadataReader metadata, FieldDefinition field)
+    {
+        foreach (CustomAttributeHandle handle in field.GetCustomAttributes())
+        {
+            CustomAttribute attribute = metadata.GetCustomAttribute(handle);
+            string? type = attribute.Constructor.Kind switch
+            {
+                HandleKind.MemberReference => SignatureNames.Name(metadata, metadata.GetMemberReference((MemberReferenceHandle)attribute.Constructor).Parent),
+                HandleKind.MethodDefinition => SignatureNames.Name(metadata, metadata.GetMethodDefinition((MethodDefinitionHandle)attribute.Constructor).GetDeclaringType()),
+                _ => null,
+            };
+            if (!string.Equals(type, "System.Text.Json.Serialization.JsonStringEnumMemberNameAttribute", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            // The value blob: the prolog 0x0001, then the one string argument (ECMA-335 II.23.3).
+            BlobReader value = metadata.GetBlobReader(attribute.Value);
+            return value.ReadUInt16() == 1 ? value.ReadSerializedString() : null;
+        }
+
+        return null;
     }
 
     /// <summary>The type and name of the member a token of the IL names, or none when it names no member.</summary>
