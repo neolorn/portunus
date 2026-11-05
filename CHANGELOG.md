@@ -18,3 +18,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The development file's reader, each value a field's text read into a pinned array (`03` PRT-VLT-008).
 - The client's configuration under `Portunus:Client`, each key checked on its raw value and a value outside its rule refused naming the key (`05` PRT-OPS-001).
 - The client's reads from the agent, each waiting while the agent waits or cannot be reached, within `Portunus:Client:WaitTimeout`, and its status (`04` PRT-LIB-004).
+- The development file's client of a Development host, refused in any other host, and the client made once from the host's configuration (`04` PRT-LIB-003, PRT-LIB-005).

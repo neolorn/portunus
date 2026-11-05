@@ -37,7 +37,7 @@ internal sealed class AgentSecretClient(ClientOptions options, TimeProvider time
                 case { Value: WireAnswer.Value value }:
                     using (value.Values)
                     {
-                        return Result.Success(Owned(value));
+                        return Result.Success(OwnedSecret.Copy(value.Current, value.Versions));
                     }
 
                 case { Value: WireAnswer.Refused refused }:
@@ -90,20 +90,6 @@ internal sealed class AgentSecretClient(ClientOptions options, TimeProvider time
             default:
                 return FailStatus(new Failure { Code = Codes.AgentUnreachable });
         }
-    }
-
-    /// <summary>The answered secret in arrays of the caller's own, pinned; the answer's own are zeroed by its reader.</summary>
-    private static Secret Owned(WireAnswer.Value value)
-    {
-        Dictionary<int, ReadOnlyMemory<byte>> versions = [];
-        foreach (KeyValuePair<int, ReadOnlyMemory<byte>> version in value.Versions)
-        {
-            byte[] owned = GC.AllocateArray<byte>(version.Value.Length, pinned: true);
-            version.Value.Span.CopyTo(owned);
-            versions[version.Key] = owned;
-        }
-
-        return new Secret { Current = value.Current, Versions = versions };
     }
 
     private Result<Secret> Fail(SecretAddress address, Failure failure)
