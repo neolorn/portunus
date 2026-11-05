@@ -28,6 +28,15 @@ namespace Portunus.Agent;
 /// </summary>
 internal static class AgentCommand
 {
+    /// <summary>The command that runs the agent.</summary>
+    internal const string Run = "run";
+
+    /// <summary>The command that carries a push to the agent.</summary>
+    internal const string Receive = "receive";
+
+    /// <summary>The command that reads the agent's status.</summary>
+    internal const string Status = "status";
+
     /// <summary>How long a command waits for the agent's answer on its push socket.</summary>
     private static readonly TimeSpan ExchangeTimeout = TimeSpan.FromSeconds(5);
 
@@ -48,9 +57,9 @@ internal static class AgentCommand
         {
             return arguments switch
             {
-                ["run", string instance] when Names.IsName(instance) => await RunAsync(instance, paths, error).ConfigureAwait(false),
-                ["receive", string instance] when Names.IsName(instance) => await ReceiveAsync(instance, paths, input, output, error).ConfigureAwait(false),
-                ["status", string instance] when Names.IsName(instance) => await StatusAsync(instance, paths, output, error).ConfigureAwait(false),
+                [Run, string instance] when Names.IsName(instance) => await RunAsync(instance, paths, error).ConfigureAwait(false),
+                [Receive, string instance] when Names.IsName(instance) => await ReceiveAsync(instance, paths, input, output, error).ConfigureAwait(false),
+                [Status, string instance] when Names.IsName(instance) => await StatusAsync(instance, paths, output, error).ConfigureAwait(false),
                 _ => Refuse(error, new Failure { Code = Codes.Fault }),
             };
         }
