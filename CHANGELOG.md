@@ -20,3 +20,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The client's reads from the agent, each waiting while the agent waits or cannot be reached, within `Portunus:Client:WaitTimeout`, and its status (`04` PRT-LIB-004).
 - The development file's client of a Development host, refused in any other host, and the client made once from the host's configuration (`04` PRT-LIB-003, PRT-LIB-005).
 - The client's health check, `Healthy` while the agent is `ready` and `Degraded` with the reason while it waits or cannot be reached (`05` PRT-OPS-004).
+- `FixedSecretClient`, a client a host's tests set, answering what is set, denied or waiting, and keeping every address asked (`04` PRT-LIB-008).
