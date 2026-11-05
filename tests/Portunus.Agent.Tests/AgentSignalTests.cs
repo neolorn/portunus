@@ -61,20 +61,7 @@ public sealed class AgentSignalTests : IDisposable
 
     private Process StartHarness()
     {
-        DirectoryInfo? root = new(AppContext.BaseDirectory);
-        while (root is not null && !File.Exists(Path.Combine(root.FullName, "Portunus.sln")))
-        {
-            root = root.Parent;
-        }
-
-        string harness = Path.Combine(root!.FullName, "tests", "Portunus.Agent.Harness", "bin", "Release", "net10.0", "Portunus.Agent.Harness.dll");
-        ProcessStartInfo start = new("dotnet") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
-        foreach (string argument in new[] { harness, _files.Configurations, _files.Swaps, "run", AgentFiles.Instance })
-        {
-            start.ArgumentList.Add(argument);
-        }
-
-        return Process.Start(start)!;
+        return Harness.Start(Harness.Folder, _files.Configurations, _files.Swaps, "run", AgentFiles.Instance);
     }
 
     private static async Task WaitForAsync(Func<bool> condition)
