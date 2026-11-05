@@ -10,7 +10,7 @@ namespace Portunus.Cli.Tests;
 [Trait("Category", "unit")]
 public sealed class ToolEnvironmentTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(RepositoryRoot(), "tmp", "cli", Guid.CreateVersion7().ToString("N"));
+    private readonly string _folder = Path.Combine(Fakes.Repository, "tmp", "cli", Guid.CreateVersion7().ToString("N"));
 
     public ToolEnvironmentTests()
     {
@@ -41,16 +41,5 @@ public sealed class ToolEnvironmentTests : IDisposable
     private static ToolEnvironment Environment(string path)
     {
         return new ToolEnvironment(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["PATH"] = path, ["PATHEXT"] = ".EXE" });
-    }
-
-    private static string RepositoryRoot()
-    {
-        DirectoryInfo? root = new(AppContext.BaseDirectory);
-        while (root is not null && !File.Exists(Path.Combine(root.FullName, "Portunus.sln")))
-        {
-            root = root.Parent;
-        }
-
-        return root?.FullName ?? throw new InvalidOperationException("The tests run below the repository's root.");
     }
 }

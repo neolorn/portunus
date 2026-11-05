@@ -64,7 +64,7 @@ public sealed class ToolStatusTests : IAsyncDisposable
     {
         using StringWriter output = new();
         using StringWriter error = new();
-        int exit = await ToolCommand.MainAsync(["status", "--to", "owner@host", "--instance", RunningAgent.Instance], _agent.Environment, output, error);
+        int exit = await ToolCommand.MainAsync(["status", "--to", "owner@host", "--instance", RunningAgent.Instance], _agent.Environment, output, error, TestContext.Current.CancellationToken);
         return (exit, output.ToString().Trim(), error.ToString());
     }
 }

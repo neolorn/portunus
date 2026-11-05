@@ -149,7 +149,7 @@ public sealed class ToolArgumentsTests
     {
         using StringWriter output = new();
         using StringWriter error = new();
-        int exit = await ToolCommand.MainAsync(arguments, Nothing, output, error);
+        int exit = await ToolCommand.MainAsync(arguments, Nothing, output, error, TestContext.Current.CancellationToken);
         return (exit, output.ToString(), error.ToString());
     }
 }

@@ -26,7 +26,8 @@ internal static class ToolCommand
     /// <param name="environment">The environment <c>op</c> and <c>ssh</c> are found in and run with.</param>
     /// <param name="output">Standard output.</param>
     /// <param name="error">Standard error.</param>
-    internal static async Task<int> MainAsync(IReadOnlyList<string> arguments, ToolEnvironment environment, TextWriter output, TextWriter error)
+    /// <param name="cancellationToken">Cancels the command, whose child processes are killed.</param>
+    internal static async Task<int> MainAsync(IReadOnlyList<string> arguments, ToolEnvironment environment, TextWriter output, TextWriter error, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(environment);
@@ -42,9 +43,9 @@ internal static class ToolCommand
 
             return options.Command switch
             {
-                ToolArguments.Push => await PushAsync(options, environment, output, error).ConfigureAwait(false),
-                ToolArguments.Check => await CheckAsync(options, environment, output, error).ConfigureAwait(false),
-                _ => await StatusAsync(options, environment, output, error).ConfigureAwait(false),
+                ToolArguments.Push => await PushAsync(options, environment, output, error, cancellationToken).ConfigureAwait(false),
+                ToolArguments.Check => await CheckAsync(options, environment, output, error, cancellationToken).ConfigureAwait(false),
+                _ => await StatusAsync(options, environment, output, error, cancellationToken).ConfigureAwait(false),
             };
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
@@ -55,14 +56,14 @@ internal static class ToolCommand
     }
 
     /// <summary>Reads the vault, refuses a set that breaks the layout, and sends it to the agent through <c>ssh</c> and <c>receive</c> (<c>02</c> PRT-PSH-002).</summary>
-    private static async Task<int> PushAsync(ToolArguments options, ToolEnvironment environment, TextWriter output, TextWriter error)
+    private static async Task<int> PushAsync(ToolArguments options, ToolEnvironment environment, TextWriter output, TextWriter error, CancellationToken cancellationToken)
     {
-        if (await VaultReader.CheckVersionAsync(environment, CancellationToken.None).ConfigureAwait(false) is Failure version)
+        if (await VaultReader.CheckVersionAsync(environment, cancellationToken).ConfigureAwait(false) is Failure version)
         {
             return Refuse(error, version);
         }
 
-        Result<ReadVault> read = await VaultReader.ReadAsync(environment, options.Vault!, options.Account, CancellationToken.None).ConfigureAwait(false);
+        Result<ReadVault> read = await VaultReader.ReadAsync(environment, options.Vault!, options.Account, cancellationToken).ConfigureAwait(false);
         if (read.Value is not ReadVault vault)
         {
             return Refuse(error, read.Failure!);
@@ -83,7 +84,7 @@ internal static class ToolCommand
             (int ExitCode, string? Line)? sent;
             using (payload)
             {
-                sent = await SendAsync(options, environment, "receive", payload.Memory).ConfigureAwait(false);
+                sent = await SendAsync(options, environment, "receive", payload.Memory, cancellationToken).ConfigureAwait(false);
             }
 
             if (await AnswerAsync(sent, output, error).ConfigureAwait(false) is int refused)
@@ -96,14 +97,14 @@ internal static class ToolCommand
     }
 
     /// <summary>Reads the vault as a push does and writes each finding of the layout, warnings included, as one line; exits 1 where any is an error (<c>02</c> PRT-PSH-004).</summary>
-    private static async Task<int> CheckAsync(ToolArguments options, ToolEnvironment environment, TextWriter output, TextWriter error)
+    private static async Task<int> CheckAsync(ToolArguments options, ToolEnvironment environment, TextWriter output, TextWriter error, CancellationToken cancellationToken)
     {
-        if (await VaultReader.CheckVersionAsync(environment, CancellationToken.None).ConfigureAwait(false) is Failure version)
+        if (await VaultReader.CheckVersionAsync(environment, cancellationToken).ConfigureAwait(false) is Failure version)
         {
             return Refuse(error, version);
         }
 
-        Result<ReadVault> read = await VaultReader.ReadAsync(environment, options.Vault!, options.Account, CancellationToken.None).ConfigureAwait(false);
+        Result<ReadVault> read = await VaultReader.ReadAsync(environment, options.Vault!, options.Account, cancellationToken).ConfigureAwait(false);
         if (read.Value is not ReadVault vault)
         {
             return Refuse(error, read.Failure!);
@@ -134,9 +135,9 @@ internal static class ToolCommand
     }
 
     /// <summary>Runs <c>portunus-agent status</c> through <c>ssh</c>, writes its answer, and exits as it does: 0, 3, or 1 (<c>02</c> PRT-PSH-004).</summary>
-    private static async Task<int> StatusAsync(ToolArguments options, ToolEnvironment environment, TextWriter output, TextWriter error)
+    private static async Task<int> StatusAsync(ToolArguments options, ToolEnvironment environment, TextWriter output, TextWriter error, CancellationToken cancellationToken)
     {
-        (int ExitCode, string? Line)? sent = await SendAsync(options, environment, "status", ReadOnlyMemory<byte>.Empty).ConfigureAwait(false);
+        (int ExitCode, string? Line)? sent = await SendAsync(options, environment, "status", ReadOnlyMemory<byte>.Empty, cancellationToken).ConfigureAwait(false);
         if (await AnswerAsync(sent, output, error).ConfigureAwait(false) is int refused)
         {
             return refused;
@@ -169,9 +170,9 @@ internal static class ToolCommand
     }
 
     /// <summary>Runs <paramref name="command"/> on the server with <paramref name="payload"/>, and answers its exit code and the agent's answer, which holds no value; or none where no <c>ssh</c> is on the <c>PATH</c>.</summary>
-    private static async Task<(int ExitCode, string? Line)?> SendAsync(ToolArguments options, ToolEnvironment environment, string command, ReadOnlyMemory<byte> payload)
+    private static async Task<(int ExitCode, string? Line)?> SendAsync(ToolArguments options, ToolEnvironment environment, string command, ReadOnlyMemory<byte> payload, CancellationToken cancellationToken)
     {
-        (int ExitCode, PinnedDocument Answer)? sent = await SshCommand.RunAsync(environment, options.To!, command, options.Instance!, payload, CancellationToken.None).ConfigureAwait(false);
+        (int ExitCode, PinnedDocument Answer)? sent = await SshCommand.RunAsync(environment, options.To!, command, options.Instance!, payload, cancellationToken).ConfigureAwait(false);
         if (sent is not (int exitCode, PinnedDocument answer))
         {
             return null;

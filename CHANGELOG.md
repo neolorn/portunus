@@ -30,3 +30,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The push's taking: only the agent's own vault, only into a waiting agent unless it says to replace, only a set that passes the layout, and then the fetch's attempts ended and the token dropped (`02` PRT-PSH-003, PRT-PSH-005).
 - `portunus`, the .NET tool: `push`, which reads a vault through the owner's own 1Password app, checks its layout and sends it over `ssh` to `portunus-agent receive`; `check`, which writes each finding of a vault's layout; and `status`, which reads an agent's status over `ssh` (`02` PRT-PSH-002, PRT-PSH-004).
 - The tool finds `op` and `ssh` only in a `PATH` folder that is an absolute path, never in one that names the working directory (`02` PRT-PSH-002).
+- A cancelled `op` or `ssh` command of the tool killed with every process it started (`02` PRT-PSH-002).

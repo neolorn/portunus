@@ -62,16 +62,29 @@ internal static class SshCommand
 #pragma warning restore CA2025
         try
         {
-            await process.StandardInput.BaseStream.WriteAsync(payload, cancellationToken).ConfigureAwait(false);
-            process.StandardInput.Close();
+            try
+            {
+                await process.StandardInput.BaseStream.WriteAsync(payload, cancellationToken).ConfigureAwait(false);
+                process.StandardInput.Close();
+            }
+            catch (System.IO.IOException)
+            {
+                // ssh ended before it took the whole payload; its exit code says why.
+            }
+
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (System.IO.IOException)
+        catch (OperationCanceledException)
         {
-            // ssh ended before it took the whole payload; its exit code says why.
+            // A cancelled command is killed with every process it started, as the agent's op is.
+            process.Kill(entireProcessTree: true);
+            throw;
+        }
+        finally
+        {
+            await reading.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         }
 
-        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-        await reading.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         return (process.ExitCode, reading.IsCompletedSuccessfully && !answer.IsOverBound ? answer.Detach() : new PinnedDocument([], 0));
     }
 
