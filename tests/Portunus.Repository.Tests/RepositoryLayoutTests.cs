@@ -14,7 +14,7 @@ public sealed class RepositoryLayoutTests
     private const string Mapping = """<packageSourceMapping><packageSource key="nuget.org"><package pattern="*" /></packageSource><packageSource key="vendor"><package pattern="Janus.*" /><package pattern="Hermes.Core" /><package pattern="Themis.Core" /></packageSource></packageSourceMapping>""";
 
     private static readonly IReadOnlyList<string> RootFiles =
-        ["Portunus.sln", "Directory.Build.props", "Directory.Packages.props", "global.json", ".editorconfig", ".gitignore", "nuget.config", "CHANGELOG.md"];
+        ["Portunus.sln", "Directory.Build.props", "Directory.Packages.props", "global.json", ".editorconfig", ".gitignore", "nuget.config", "CHANGELOG.md", "RELEASE-NOTES.md"];
 
     [Fact]
     public void PRT_ENG_001_AC1_ProjectsFollowTheLayout()
@@ -361,7 +361,7 @@ public sealed class RepositoryLayoutTests
     {
         Assert.Empty(LayoutRules.RootFileViolations(
             [
-                .. RootFiles, "RELEASE-NOTES.md", "src/Portunus.Core/Portunus.Core.csproj", "docs/spec/00-overview.md", ".github/workflows/gates.yml",
+                .. RootFiles, "src/Portunus.Core/Portunus.Core.csproj", "docs/spec/00-overview.md", ".github/workflows/gates.yml",
                 "build/gates/run-gates.ps1", "deploy/example.json", "vendor/SHA256SUMS", "samples/Samples.sln",
             ]));
     }
@@ -381,6 +381,7 @@ public sealed class RepositoryLayoutTests
     [InlineData("CHANGELOG.md")]
     [InlineData("nuget.config")]
     [InlineData("Portunus.sln")]
+    [InlineData("RELEASE-NOTES.md")]
     public void PRT_ENG_001_AC1_ListedRootFileMissingIsFound(string missing)
     {
         Assert.Contains($"{missing} is missing from the repository's root.", LayoutRules.RootFileViolations([.. RootFiles.Where(file => !string.Equals(file, missing, StringComparison.Ordinal))]));

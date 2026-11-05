@@ -29,10 +29,6 @@ internal static partial class LayoutRules
     private static readonly IReadOnlyList<string> RootFiles =
         ["Portunus.sln", "Directory.Build.props", "Directory.Packages.props", "global.json", ".editorconfig", ".gitignore", "nuget.config", "CHANGELOG.md", "RELEASE-NOTES.md"];
 
-    /// <summary>The files the root holds from phase 0: all of them but the release notes, which come in phase 6 (plan).</summary>
-    private static readonly IReadOnlyList<string> RequiredRootFiles =
-        [.. RootFiles.Where(file => file is not "RELEASE-NOTES.md")];
-
     /// <summary>
     /// The folders at the root: the projects, the sample host, the agent's unit files, the
     /// siblings' packages, the documents, the gates and the pipeline.
@@ -217,12 +213,11 @@ internal static partial class LayoutRules
 
     /// <summary>
     /// Answers each file of <paramref name="tracked"/>, the paths Git tracks, outside the root
-    /// PRT-ENG-001 lists, and each listed file missing; <c>RELEASE-NOTES.md</c> comes with the
-    /// first release commit.
+    /// PRT-ENG-001 lists, and each listed file missing.
     /// </summary>
     internal static IEnumerable<string> RootFileViolations(IReadOnlyCollection<string> tracked)
     {
-        foreach (string file in RequiredRootFiles.Where(file => !tracked.Contains(file, StringComparer.Ordinal)))
+        foreach (string file in RootFiles.Where(file => !tracked.Contains(file, StringComparer.Ordinal)))
         {
             yield return $"{file} is missing from the repository's root.";
         }
