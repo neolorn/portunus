@@ -114,8 +114,10 @@ internal static class LayoutValidator
 
     /// <summary>
     /// The findings of one secret's fields: a single field beside versions, live or retired; a
-    /// <c>.current</c> missing, standing without versions, or naming no live version; and more
-    /// live versions than the limit. A finding about the secret as a whole names its name.
+    /// live and a retired version of one number; a <c>.current</c> missing, standing without
+    /// versions, or naming no live version; and more live versions than the limit. A secret
+    /// holding only retired versions is allowed (P-024). A finding about the secret as a whole
+    /// names its name.
     /// </summary>
     private static IEnumerable<LayoutFinding> SecretFindings(string title, string name, IReadOnlyList<(FieldLabel Label, VaultField Field)> fields)
     {
@@ -126,6 +128,17 @@ internal static class LayoutValidator
             if (versioned)
             {
                 yield return Error(Codes.LayoutMixed, title, single.Label);
+            }
+        }
+
+        // A number names one version, so a live and a retired version of it are one label
+        // twice; the later in ordinal order is named (P-024).
+        foreach ((FieldLabel retired, VaultField retiredField) in fields.Where(entry => entry.Label.Kind == FieldKind.Retired))
+        {
+            foreach ((FieldLabel _, VaultField liveField) in fields.Where(entry => entry.Label.Kind == FieldKind.Version && entry.Label.Number == retired.Number))
+            {
+                string later = string.CompareOrdinal(liveField.Label, retiredField.Label) > 0 ? liveField.Label : retiredField.Label;
+                yield return Error(Codes.LayoutFieldDuplicate, title, later);
             }
         }
 

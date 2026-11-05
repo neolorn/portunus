@@ -240,6 +240,31 @@ public sealed class LayoutValidatorTests
     }
 
     [Fact]
+    public void PRT_VLT_005_AC2_LiveAndRetiredVersionOfOneNumberAreADuplicate()
+    {
+        VaultSet set = Sets.Of(Sets.Item("Janus", ("keys.1.retired", "x"), ("keys.2", "y"), ("keys.2.retired", "z"), ("keys.current", "2")));
+
+        Assert.Equal([new LayoutFinding(Codes.LayoutFieldDuplicate, "Janus", "keys.2.retired", IsWarning: false)], LayoutValidator.Check(set));
+    }
+
+    [Fact]
+    public void PRT_VLT_005_AC2_SecretHoldingOnlyRetiredVersionsPassesTheCheck()
+    {
+        VaultSet set = Sets.Of(Sets.Item("Janus", ("keys.1.retired", "x"), ("connection", "y")));
+
+        Assert.Empty(LayoutValidator.Check(set));
+    }
+
+    [Fact]
+    public void Check_LiveAndRetiredOfOneNumberInAnotherCase_NamesTheLaterInOrdinalOrder()
+    {
+        // An upper-case letter comes first in ordinal order, so the live label is the later.
+        VaultSet set = Sets.Of(Sets.Item("Janus", ("keys.2", "y"), ("Keys.2.retired", "z"), ("keys.current", "2")));
+
+        Assert.Equal([new LayoutFinding(Codes.LayoutFieldDuplicate, "Janus", "keys.2", IsWarning: false)], LayoutValidator.Check(set));
+    }
+
+    [Fact]
     public void Check_FieldBesideARetiredVersion_IsMixed()
     {
         VaultSet set = Sets.Of(Sets.Item("Janus", ("keys", "x"), ("keys.1.retired", "y")));
