@@ -991,3 +991,30 @@ checks. Found at phase 6.
 
 **Propagated to:**
 - `08` PRT-THR-001 (criterion 1).
+
+## P-042 — The sample host's tests start it as the siblings' do
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-001, PRT-ENG-009,
+PRT-LIB-001
+
+**TL;DR.** The sample host's entry point is top-level statements in `Program.cs`, the one
+file of the repository outside the namespace rule, so the Web SDK generates its public
+`Program`; its tests start it through `WebApplicationFactory<Program>`
+(`Microsoft.AspNetCore.Mvc.Testing`), replacing the client with `Portunus.Testing`'s
+through the factory's service configuration, as the Hermes and Themis samples do. Found at
+phase 6: a test reaches the host only through its entry point, the host may hold no grant,
+and a public type of its own fails CA1515.
+
+- **The same way as the siblings,** whose sample hosts' tests are written so; the factory
+  hosts a generic host as well as a web one, and the sample host serves no request.
+- **What stays.** No grant from the sample host, CA1515 everywhere it applies, and the
+  namespace rule for every other file.
+
+*Rejected:*
+- **A grant to the sample host's tests,** or **CA1515 off in the sample host:** a sample
+  host is a consumer, and a consumer holds neither.
+- **Starting the entry point by reflection:** the factory already does it, tested.
+
+**Propagated to:**
+- `06` PRT-ENG-001 (the sample host and the namespace rule) and PRT-ENG-009 (the test
+  package); `04` PRT-LIB-001 (the sample host's test project's row).

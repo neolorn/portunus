@@ -25,7 +25,8 @@ which a launcher script of the test's sets where the agent starts the fake (P-02
 `tests/Portunus.Agent.Harness` is a console project, not shipped, that builds the agent's
 host through the shipped entry point's own internal method with a test's paths (P-027),
 and, as `client`, sends a file's bytes on a socket and writes the answer (P-030).
-Each project's namespace root is its name; a file's namespace matches its folder; one
+Each project's namespace root is its name; a file's namespace matches its folder (save the
+sample host's `Program.cs`, top-level statements, P-042); one
 public top-level type per file. Projects are flat but for two folders of
 `Portunus.Agent`, `Fetch` (the fetch and `op`, `01` section 2) and `Serving` (the sockets,
 the declarations, the reads and the push, `01` section 4, `02` PRT-PSH-003); which file
@@ -54,7 +55,8 @@ The sample host is a worker service on the ASP.NET Core shared framework, throug
 SDK, with an invented domain naming no real product or company (checked in review): it
 registers `AddPortunus` and `AddPortunusHermesSecrets` (P-040), reads one secret of its
 own and Hermes's `connection` through them at its start, and logs
-the versions it holds, never a value; its tests run it through `Portunus.Testing`. It
+the versions it holds, never a value; its tests start it through
+`WebApplicationFactory<Program>` with `Portunus.Testing`'s client in place (P-042). It
 runs in the gate (PRT-ENG-012) from packages packed from the same commit into
 `artifacts/packages/`, which `.gitignore` lists, at a version the gate passes it; it alone
 has no lockfile and no locked restore. The sample host and its test project are outside
@@ -325,6 +327,7 @@ the projects `04` PRT-LIB-001 allows.
 | Public surface | `Microsoft.CodeAnalysis.PublicApiAnalyzers` (build-only) | MIT |
 | Versioning | `MinVer` (build-only) | Apache 2.0 |
 | Tests | `xunit.v3` | Apache 2.0 |
+| The sample host's tests | `Microsoft.AspNetCore.Mvc.Testing` (P-042) | MIT |
 | A host in the client's and the adapters' tests (`tests/Portunus.Tests`, `tests/Portunus.Testing.Tests` and each adapter's test project) | `Microsoft.Extensions.Hosting`, the agent's own row's package (P-025, P-039) | MIT |
 
 Every package is taken at its latest stable release when added, the Microsoft packages at
