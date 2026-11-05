@@ -12,16 +12,21 @@
     is root, on any other machine (P-027).
 .PARAMETER Repository
     The repository whose tests to run; by default, this one.
+.PARAMETER Kinds
+    The kinds to run, of the four; by default every one, as the gate runs them. The real op's
+    check runs the integration and linux kinds alone on the files it records (P-043).
 #>
 [CmdletBinding()]
 param(
-    [string] $Repository = (Join-Path $PSScriptRoot '..' '..')
+    [string] $Repository = (Join-Path $PSScriptRoot '..' '..'),
+    [ValidateSet('unit', 'integration', 'linux', 'contract')]
+    [string[]] $Kinds = @('unit', 'integration', 'linux', 'contract')
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$kinds = 'unit', 'integration', 'linux', 'contract'
+$everyKind = 'unit', 'integration', 'linux', 'contract'
 
 # The linux kind runs as root, so owners, groups and chown are real (06 PRT-ENG-008, P-027).
 function Invoke-AsRoot($Project) {
@@ -100,8 +105,8 @@ foreach ($test in $tests | Where-Object { $_.Project -in $projects.BaseName } | 
     elseif ($categories.Count -gt 1) {
         $unsorted.Add("$($test.Name) carries more than one Category trait: $($categories -join ', ')")
     }
-    elseif ($categories[0] -cnotin $kinds) {
-        $unsorted.Add("$($test.Name) carries the Category $($categories[0]), which is none of $($kinds -join ', ')")
+    elseif ($categories[0] -cnotin $everyKind) {
+        $unsorted.Add("$($test.Name) carries the Category $($categories[0]), which is none of $($everyKind -join ', ')")
     }
 }
 if ($unsorted.Count -gt 0) {
@@ -110,7 +115,7 @@ if ($unsorted.Count -gt 0) {
 }
 
 $failures = [System.Collections.Generic.List[string]]::new()
-foreach ($kind in $kinds) {
+foreach ($kind in $everyKind | Where-Object { $_ -cin $Kinds }) {
     if ($kind -eq 'linux' -and -not $IsLinux) {
         # A repository with no linux test needs no container: each project runs none.
         if (-not ($tests | Where-Object { $_.Project -in $projects.BaseName -and @($_.Categories) -ccontains 'linux' })) {

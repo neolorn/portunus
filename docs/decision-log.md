@@ -119,6 +119,9 @@ read every environment's vault).
 
 ## P-005 — The `op` CLI at a pinned version, not an SDK
 
+> **Amended.** P-043 (accepted): the scenarios are recorded afresh by the owner's run
+> against the real `op` before each release.
+
 **Date:** 2026-11-05 · **Status:** accepted
 
 **TL;DR.** 1Password publishes no official .NET SDK: its SDKs are for Go, JavaScript and
@@ -833,6 +836,9 @@ configuration. Found at phase 4: `07` section 3 read "one `@`".
 
 ## P-035 — The recordings carry no identifier of the owner's account
 
+> **Amended.** P-043 (accepted): the script is `build/check-real-op.ps1`, run before each
+> release.
+
 **Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-008
 
 **TL;DR.** `build/record-op-scenarios.ps1` replaces every 1Password identifier it records
@@ -1018,3 +1024,50 @@ and a public type of its own fails CA1515.
 **Propagated to:**
 - `06` PRT-ENG-001 (the sample host and the namespace rule) and PRT-ENG-009 (the test
   package); `04` PRT-LIB-001 (the sample host's test project's row).
+
+## P-043 — The real `op`, checked on the owner's computer before each release
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-008, PRT-ENG-011, P-005,
+P-035
+
+**TL;DR.** `build/check-real-op.ps1`, in place of `build/record-op-scenarios.ps1`, is run by
+the owner on the owner's own computer before each release is tagged. It runs the pinned
+`op` against the two sample vaults, records every recorded scenario afresh with P-035's
+placeholders, and compares the files with those committed, each instant set aside. The
+owner's decision (2026-11-05): a fake alone never proves the real `op` works, so a run
+against the real one comes before each release; the fake stays for the pipeline.
+
+- **Why the fake stays** in the pipeline: the pipeline would otherwise hold a live service
+  account's token; the revoked, unreachable, rate-limited and wrong-version cases could not
+  be produced at each run; and each run would spend the account's shared daily reads
+  (P-006, P-028).
+- **Why before each release:** the agent reads JSON whose shape `op` does not document
+  (P-005). A run against the real `op` catches a change on 1Password's side that the
+  pinned version does not, and keeps the fake what the real `op` answers.
+- **The run.** It asks for the two service accounts' tokens without echo, as P-035's script
+  did; the tool's commands go through the 1Password app; one command runs with the network
+  disconnected. It writes the new files under `tmp/` first, removing all of them on a
+  finding of P-035, and ends with one line: the `op` version, the commit checked out, and
+  `same`, `changed` or `failed`. With `changed`, it writes the new files in place of the
+  committed ones and runs the `integration` and `linux` tests on them
+  (`build/gates/gate-tests.ps1`), whose result it prints. The written scenarios (P-028)
+  are not run, and the run never writes them: they are written once, in phase 7's second
+  part, from the owner's first run's files in the form P-028 gives, and stay as they are.
+- **The release.** A release's tag is pushed only after the owner's run on the release
+  commit ended `same`, and the tag's message carries that line. `changed` holds the
+  release: the new files come in a `test:` commit, with whatever the agent or the tool needs
+  to read them, before a new release commit. 1.0.0-rc.1 was tagged before this entry.
+- **What it needs on the owner's computer:** `op` 2.41.1, the 1Password app with its CLI
+  integration on, PowerShell 7, and Docker for the `linux` tests. The vaults and service
+  accounts of the first run stay for every later run.
+
+*Rejected:*
+- **The real `op` alone, run locally, with no fake:** the pipeline would no longer test the
+  agent's fetch, the push or their failures, and a change that breaks them would merge.
+- **The real `op` in the pipeline:** a live token on the platform, the shared read budget
+  spent at each push, and the failure cases not producible there.
+- **A recording made once** (P-035 as written): it ages unseen.
+
+**Propagated to:**
+- `06` PRT-ENG-008 (the scenarios) and PRT-ENG-011 (the release); the implementation plan
+  (phase 7, and its inputs).
