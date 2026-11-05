@@ -5,6 +5,12 @@ namespace Portunus.Core;
 /// </summary>
 internal static class Limits
 {
+    /// <summary>A request on a socket: 4 KiB (<c>01</c> PRT-AGT-008).</summary>
+    internal const int RequestBytes = 4 * 1024;
+
+    /// <summary>An answer, and a push's payload: 2 MiB (<c>01</c> PRT-AGT-008; <c>02</c> PRT-PSH-003).</summary>
+    internal const int AnswerBytes = 2 * 1024 * 1024;
+
     /// <summary>Items in a vault (<c>03</c> PRT-VLT-003).</summary>
     internal const int Items = 64;
 

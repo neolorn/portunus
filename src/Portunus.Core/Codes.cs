@@ -5,6 +5,12 @@ namespace Portunus.Core;
 /// </summary>
 internal static class Codes
 {
+    /// <summary>A request outside its format, or of a kind the socket does not take.</summary>
+    internal const string RequestInvalid = "secrets.request.invalid";
+
+    /// <summary>A request of another protocol version; its detail <c>version</c> is the agent's.</summary>
+    internal const string RequestVersion = "secrets.request.version";
+
     /// <summary>A vault title outside its rule (<c>03</c> PRT-VLT-001).</summary>
     internal const string LayoutVaultTitle = "secrets.layout.vaulttitle";
 
