@@ -40,7 +40,7 @@ public sealed class ClientFactoryTests : IDisposable
     }
 
     [Fact]
-    public void PRT_LIB_003_AC2_ConfigurationValueOutsideItsRuleStopsTheStartNamingTheKey()
+    public void Make_ConfigurationValueOutsideItsRule_StopsTheStartNamingTheKey()
     {
         IConfiguration configuration = ClientConfigurationTests.Configuration((ClientKeys.PollInterval, "00:02:00"));
 
@@ -51,7 +51,7 @@ public sealed class ClientFactoryTests : IDisposable
     }
 
     [Fact]
-    public void PRT_LIB_003_AC3_FileSourceInAProductionHostStopsTheStart()
+    public void Make_FileSourceInAProductionHost_StopsTheStartAsNotDevelopment()
     {
         WriteFile("""{"vault":"Sample Development","items":{"Themis":{"connection":"sample-connection"}}}""");
 
