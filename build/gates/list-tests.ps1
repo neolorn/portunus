@@ -26,7 +26,8 @@ function Get-Projects([string] $folder, [string] $filter) {
     }
 }
 
-$projects = @(Get-Projects (Join-Path $Repository 'tests') '*.csproj' | Sort-Object FullName)
+# Only the test projects list tests: the fakes and the harness are console projects (06 PRT-ENG-001).
+$projects = @(Get-Projects (Join-Path $Repository 'tests') '*.Tests.csproj' | Sort-Object FullName)
 
 foreach ($project in $projects) {
     $build = dotnet build $project.FullName --configuration Release -p:RestoreLockedMode=true -nodeReuse:false 2>&1
