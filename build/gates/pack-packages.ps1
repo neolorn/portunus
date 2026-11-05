@@ -4,7 +4,8 @@
     Packs every package of src/ at one version into artifacts/packages/ (06 PRT-ENG-001, PRT-ENG-011).
 .DESCRIPTION
     The packages are the projects of src/ but Portunus.Agent, an executable the release publishes
-    and does not pack (00 section 2.2). The release job packs them at its tag's version. The
+    and does not pack (00 section 2.2). The release job packs them at its tag's version, and the
+    sample host's gate at a version of the commit's own, so the sample builds from them. The
     folder is emptied of earlier packages first, and the restore is locked.
 .PARAMETER Version
     The version every package carries, in place of the one MinVer would derive from the tags.
