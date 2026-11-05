@@ -40,8 +40,9 @@ internal static class ReferenceRules
     /// <summary>The test packages of <c>06</c> PRT-ENG-009.</summary>
     internal static IReadOnlyList<string> TestPackages { get; } = ["xunit.v3"];
 
-    /// <summary>The test projects that may also reference <c>Microsoft.Extensions.Hosting</c>, to run a real host (<c>06</c> PRT-ENG-009, P-025).</summary>
-    private static readonly IReadOnlyList<string> HostTestProjects = [Packages.TestProject(Packages.Client), Packages.TestProject(Packages.Testing)];
+    /// <summary>The test projects that may also reference <c>Microsoft.Extensions.Hosting</c>, to run a real host (<c>06</c> PRT-ENG-009, P-025, P-039): the client's, the fixed client's and each adapter's.</summary>
+    private static readonly IReadOnlyList<string> HostTestProjects =
+        [Packages.TestProject(Packages.Client), Packages.TestProject(Packages.Testing), Packages.TestProject(Packages.Janus), Packages.TestProject(Packages.Hermes), Packages.TestProject(Packages.Themis)];
 
     /// <summary>
     /// The library's own projects each part's project may reference, by the rows phase 0 builds:
@@ -52,6 +53,7 @@ internal static class ReferenceRules
         [Packages.Core] = [],
         [Packages.Client] = [Packages.Core],
         [Packages.Testing] = [Packages.Core, Packages.Client],
+        [Packages.Janus] = [Packages.Client],
         [Packages.Hermes] = [Packages.Client],
         [Packages.Cli] = [Packages.Core],
         [Packages.Agent] = [Packages.Core],
@@ -63,6 +65,7 @@ internal static class ReferenceRules
         [Packages.Core] = [],
         [Packages.Client] = HostingAbstractions,
         [Packages.Testing] = [],
+        [Packages.Janus] = ["Janus.Hosting"],
         [Packages.Hermes] = ["Hermes.Core"],
         [Packages.Cli] = [],
         [Packages.Agent] = Hosting,
