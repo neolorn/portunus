@@ -26,4 +26,11 @@
     <PackageVersion Include="xunit.v3" Version="4.0.2" />
   </ItemGroup>
 
+  <!-- The library's own packages, which the sample host alone references, at the version its gate packs them at (06 PRT-ENG-001). -->
+  <ItemGroup Condition="'$(PortunusPackageVersion)' != ''">
+    <PackageVersion Include="Portunus" Version="$(PortunusPackageVersion)" />
+    <PackageVersion Include="Portunus.Hermes" Version="$(PortunusPackageVersion)" />
+    <PackageVersion Include="Portunus.Testing" Version="$(PortunusPackageVersion)" />
+  </ItemGroup>
+
 </Project>
