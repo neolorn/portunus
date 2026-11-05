@@ -1,0 +1,26 @@
+[Unit]
+Description=Portunus key agent for %i
+Before=docker.service
+StartLimitIntervalSec=3600
+StartLimitBurst=5
+
+[Service]
+Type=notify
+User=portunus
+Group=portunus
+ExecStart=/usr/local/bin/portunus-agent run %i
+RuntimeDirectory=portunus/%i
+RuntimeDirectoryMode=0711
+RuntimeDirectoryPreserve=yes
+AmbientCapabilities=CAP_CHOWN
+CapabilityBoundingSet=CAP_CHOWN
+NoNewPrivileges=yes
+LimitCORE=0
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
