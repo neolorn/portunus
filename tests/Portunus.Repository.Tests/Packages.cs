@@ -26,6 +26,12 @@ internal static class Packages
 
     internal const string Agent = "Portunus.Agent";
 
+    /// <summary>The packages' authors, the name the lead's first message of phase 0 gives (<c>06</c> PRT-ENG-011).</summary>
+    internal const string Authors = "Hossam Ismail";
+
+    /// <summary>The repository's address, which every package carries (<c>06</c> PRT-ENG-011).</summary>
+    internal const string RepositoryUrl = "https://github.com/neolorn/portunus";
+
     /// <summary>The test project over the whole repository, the one with no source project.</summary>
     internal const string RepositoryTests = "Portunus.Repository.Tests";
 
