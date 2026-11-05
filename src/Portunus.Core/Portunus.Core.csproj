@@ -9,4 +9,8 @@
     <PackageReference Include="MinVer" PrivateAssets="all" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Portunus.Core.Tests" />
+  </ItemGroup>
+
 </Project>
