@@ -78,6 +78,41 @@ public sealed class PackageAllowListTests
     }
 
     [Fact]
+    public void PRT_ENG_009_AC1_JanusAdaptersPackagesAreWithinTheTableOrJanusHostingsClosure()
+    {
+        Assert.Empty(JanusClosure.Violations(RepositoryRoot.Path));
+    }
+
+    [Fact]
+    public void PRT_ENG_009_AC1_JanusAdaptersPackageOutsideTheClosureIsFound()
+    {
+        using RepositoryFixture fixture = new();
+        fixture.Write("src/Portunus.Janus/packages.lock.json", """
+            { "version": 2, "dependencies": { "net10.0": { "Janus.Hosting": { "type": "Direct", "requested": "[1.0.0-rc.4, 1.0.0-rc.4]", "resolved": "1.0.0-rc.4" }, "OpenIddict": { "type": "Transitive", "resolved": "7.7.1" }, "Newtonsoft.Json": { "type": "Transitive", "resolved": "13.0.3" }, "System.Security.Cryptography.Xml": { "type": "CentralTransitive", "requested": "[10.0.14, )", "resolved": "10.0.14" } } } }
+            """);
+
+        Assert.Equal(
+            ["src/Portunus.Janus/packages.lock.json takes Newtonsoft.Json, which is neither in PRT-ENG-009's table nor in Janus.Hosting's closure."],
+            JanusClosure.Violations(fixture.Root));
+    }
+
+    [Fact]
+    public void PRT_ENG_009_AC1_PatchedPinsBesideJanusHostingAreAccepted()
+    {
+        using RepositoryFixture fixture = new();
+        fixture.Write("Directory.Packages.props", """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Janus.Hosting" Version="[1.0.0-rc.4]" />
+                <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+                <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.14" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        Assert.Empty(PackageRules.AllowListViolations(fixture.Root));
+    }
+    [Fact]
     public void PRT_ENG_008_AC1_NoMockingPackageIsReferenced()
     {
         Assert.Empty(PackageRules.MockingViolations(RepositoryRoot.Path));

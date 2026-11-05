@@ -111,6 +111,7 @@ public sealed class SettingRuleTests
               <PropertyGroup>
                 <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                 <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                <CentralPackageVersionOverrideEnabled>true</CentralPackageVersionOverrideEnabled>
               </PropertyGroup>
               <ItemGroup>
                 <PackageVersion Include="xunit.v3" Version="4.0.2" NoWarn="NU1903" />
@@ -120,7 +121,8 @@ public sealed class SettingRuleTests
 
         string[] violations = [.. SettingRules.SettingViolations(fixture.Root)];
 
-        Assert.Contains("Directory.Packages.props sets CentralPackageTransitivePinningEnabled; it sets no property but ManagePackageVersionsCentrally.", violations);
+        Assert.Contains("Directory.Packages.props sets CentralPackageVersionOverrideEnabled; it sets no property but ManagePackageVersionsCentrally and CentralPackageTransitivePinningEnabled.", violations);
+        Assert.DoesNotContain(violations, violation => violation.Contains("sets CentralPackageTransitivePinningEnabled", StringComparison.Ordinal));
         Assert.Contains("Directory.Packages.props sets NoWarn on its PackageVersion item xunit.v3, which turns a warning off.", violations);
     }
 

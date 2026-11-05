@@ -20,6 +20,7 @@ internal static class PackageRules
         .. ReferenceRules.HostingAbstractions,
         .. ReferenceRules.Hosting,
         .. ReferenceRules.Siblings,
+        .. JanusClosure.Pinned.Keys,
         ReferenceRules.PublicApiAnalyzers,
         ReferenceRules.MinVer,
         .. ReferenceRules.TestPackages,

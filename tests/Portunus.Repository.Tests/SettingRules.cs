@@ -200,9 +200,10 @@ internal static partial class SettingRules
         }
 
         XDocument document = XDocument.Load(path);
-        foreach (XElement property in document.Descendants("PropertyGroup").Elements().Where(property => property.Name.LocalName is not "ManagePackageVersionsCentrally"))
+        foreach (XElement property in document.Descendants("PropertyGroup").Elements().Where(property => property.Name.LocalName is not ("ManagePackageVersionsCentrally" or "CentralPackageTransitivePinningEnabled")))
         {
-            yield return $"Directory.Packages.props sets {property.Name.LocalName}; it sets no property but ManagePackageVersionsCentrally.";
+            // Central transitive pinning holds a sibling's patched dependency (06 PRT-ENG-009, P-038).
+            yield return $"Directory.Packages.props sets {property.Name.LocalName}; it sets no property but ManagePackageVersionsCentrally and CentralPackageTransitivePinningEnabled.";
         }
 
         foreach (string violation in WarningViolations(PackagesProps, document))
