@@ -113,8 +113,9 @@ whole; where it fails, nothing of it is kept.
 The token is read from `Portunus:Agent:TokenFile` into a pinned array at the start, as
 the file holds it less one final line ending (`\n` or `\r\n`, P-031), converted to a
 `string` only to set the child process's environment, as .NET's process API requires, and
-zeroed with the array, and dropped, once a fetch succeeds or a push fills the agent (`02` PRT-PSH-003). A running agent holds no token after that, and a
-restart is the only way it fetches again.
+zeroed with the array, and dropped, once a fetch succeeds or a push fills the agent
+(`02` PRT-PSH-003). A running agent holds no token after that, and a restart is the only
+way it fetches again.
 
 *Source: P-004, P-005, P-006, P-011, P-031*
 
