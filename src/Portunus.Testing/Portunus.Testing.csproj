@@ -14,4 +14,8 @@
     <ProjectReference Include="..\Portunus\Portunus.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Portunus.Testing.Tests" />
+  </ItemGroup>
+
 </Project>

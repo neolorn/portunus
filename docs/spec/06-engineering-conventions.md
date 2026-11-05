@@ -307,6 +307,7 @@ the projects `04` PRT-LIB-001 allows.
 | Public surface | `Microsoft.CodeAnalysis.PublicApiAnalyzers` (build-only) | MIT |
 | Versioning | `MinVer` (build-only) | Apache 2.0 |
 | Tests | `xunit.v3` | Apache 2.0 |
+| A host in the client's tests (`tests/Portunus.Tests`, `tests/Portunus.Testing.Tests`) | `Microsoft.Extensions.Hosting`, the agent's own row's package (P-025) | MIT |
 
 Every package is taken at its latest stable release when added, the Microsoft packages at
 the release that matches the SDK's .NET 10 runtime, and its listing checked then (checked
@@ -315,7 +316,7 @@ PRT-LIB-007). Adding a package is a decision-log entry. `op` and `ssh` are not p
 the agent and the tool run the ones the computer holds, `op` at its pinned version (`07`
 section 7).
 
-*Source: P-005, P-016*
+*Source: P-005, P-016, P-025*
 
 **Acceptance criteria**
 1. The set of direct package references is within this table; a pull request adding

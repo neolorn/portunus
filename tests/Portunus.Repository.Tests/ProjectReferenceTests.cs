@@ -113,6 +113,23 @@ public sealed class ProjectReferenceTests
             ReferenceRules.ReferenceViolations(fixture.Root));
     }
 
+    [Theory]
+    [InlineData(Packages.Client)]
+    [InlineData(Packages.Testing)]
+    public void PRT_LIB_001_AC1_ClientsTestProjectTakingTheHostIsAccepted(string part)
+    {
+        using RepositoryFixture fixture = new();
+        fixture.WriteProject($"tests/{part}.Tests/{part}.Tests.csproj", $"""
+              <ItemGroup>
+                <PackageReference Include="xunit.v3" />
+                <PackageReference Include="Microsoft.Extensions.Hosting" />
+                <ProjectReference Include="..\..\src\{part}\{part}.csproj" />
+              </ItemGroup>
+            """);
+
+        Assert.DoesNotContain(ReferenceRules.ReferenceViolations(fixture.Root), violation => violation.Contains("Microsoft.Extensions.Hosting", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void PRT_LIB_001_AC1_ShippedProjectWithoutItsBuildOnlyReferencesIsFound()
     {

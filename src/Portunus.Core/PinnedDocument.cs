@@ -23,6 +23,9 @@ internal sealed class PinnedDocument : IDisposable
     /// <summary>The document's bytes.</summary>
     internal ReadOnlySpan<byte> Span => _array.AsSpan(0, Length);
 
+    /// <summary>The document's bytes, for a write that cannot take a span.</summary>
+    internal ReadOnlyMemory<byte> Memory => _array.AsMemory(0, Length);
+
     public void Dispose()
     {
         CryptographicOperations.ZeroMemory(_array);
