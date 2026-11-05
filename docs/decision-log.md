@@ -628,3 +628,82 @@ options and the health checks register without reflection (PRT-ENG-004).
 
 **Propagated to:**
 - `06` PRT-ENG-009 (the row).
+
+## P-026 — The agent reads and sets owners through `statx` and `fchownat`
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-004
+
+**TL;DR.** Beside `prctl`, the agent calls two more functions of the C library through a
+source-generated `LibraryImport`: `statx`, to read a file's or a directory's owner, group
+and mode, and `fchownat` with `AT_SYMLINK_NOFOLLOW`, to set a directory's or a socket's
+owner and group. Found at phase 3: the .NET runtime reads and sets a Unix file's mode but
+not its owner or group, while PRT-OPS-001 checks that the agent's file is root's and
+PRT-AGT-006 sets each directory's group.
+
+- **Why `statx`:** its structure is the same on every architecture the agent ships for
+  (`linux-x64`, `linux-arm64`), where `stat`'s is not.
+- **Why `fchownat` with `AT_SYMLINK_NOFOLLOW`:** it never follows a link planted where a
+  directory was expected.
+- **What stays.** No other native call; the peer's credentials are still read with
+  `Socket.GetRawSocketOption`; modes are still set through the runtime.
+
+*Rejected:*
+- **The deployment setting owners (a unit's `ExecStartPre`, `tmpfiles.d`):** the agent
+  must still read owners to check them, which needs `statx` anyway, and a correction it
+  cannot make is a start it cannot finish.
+- **Running `chown` and `stat` as child processes:** more processes, more parsing, and a
+  `PATH` to trust.
+
+**Propagated to:**
+- `06` PRT-ENG-004 (the native calls and criterion 2).
+
+## P-027 — How the agent's start and stop are tested
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-001, PRT-ENG-008
+
+**TL;DR.** The `linux` kind runs as root, so owners, groups and `chown` are real. The
+agent's start takes its system paths (the configuration's directory, `/proc/swaps`) as
+internal constructor parameters that only tests set, while the executable always passes
+the fixed real ones. A real `SIGTERM` reaches a harness executable that builds the agent
+exactly as the shipped one does, but with a test's paths. Found at phase 3: a test that is
+not root cannot own a file as root, a runner may hold swap, and a signal sent to the test
+process would end the test run.
+
+- **Root.** On the pipeline's runner, `build/gates/gate-tests.ps1` runs the `linux` kind
+  under `sudo`. On another machine it runs it in the SDK's container, whose user is root.
+  Every file a test creates as root it removes when it ends.
+- **The seams.** The internal start type takes the paths above as parameters, visible to
+  the agent's test project and the harness through `InternalsVisibleTo` alone. No
+  environment variable, argument or configuration key changes them, and the shipped
+  executable's entry point passes the real values. The identity the safety check takes as
+  root is never a parameter: it is root.
+- **The harness.** `tests/Portunus.Agent.Harness` is a console project, not shipped, that
+  references `Portunus.Agent` and builds its host through the same internal method the
+  shipped entry point uses (the same signal handling), with the paths a test gives in its
+  arguments. A test starts it, sends `SIGTERM` with the `kill` command, and checks its exit
+  and its logs (PRT-AGT-009).
+- **What stays.** The shipped executable holds no test path, no test switch and nothing a
+  test sets.
+
+*Rejected:*
+- **A test environment variable read by the shipped executable:** a switch in production
+  that weakens the safety check.
+- **Signalling the test process:** it ends the run.
+
+**Propagated to:**
+- `06` PRT-ENG-001 (the harness project) and PRT-ENG-008 (the `linux` kind as root);
+- `04` PRT-LIB-001 (the harness's references).
+
+## P-028 — The rate limit's scenario is written, not recorded
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-008
+
+**TL;DR.** The fake `op`'s rate-limited scenario is written from 1Password's documented
+class, a standard error naming `(429)`, and marked in its file as written, not recorded.
+Every other scenario is recorded by the owner. Found at phase 3: provoking a real `(429)`
+spends the whole account's daily allowance of 1,000 reads, which every service account on
+the account shares, and so stops every environment's starts for a day.
+
+**Propagated to:**
+- `06` PRT-ENG-008 (the scenarios).
+

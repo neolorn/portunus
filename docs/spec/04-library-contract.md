@@ -23,6 +23,7 @@ project SHALL reference only what this item allows it.
 | `Portunus.Agent` (an executable, `portunus-agent`) | `Portunus.Core`; the hosting packages of `06` PRT-ENG-009 |
 | `tests/Portunus.Repository.Tests` | Every shipped project, whose built assemblies its contract tests read (`06` PRT-ENG-004), and the test packages of `06` PRT-ENG-009 |
 | `tests/Portunus.Fakes` | `Portunus.Core` |
+| `tests/Portunus.Agent.Harness` | `Portunus.Agent`, whose internals it sees through `InternalsVisibleTo` (P-027) |
 | Any other test project | Its source project, `Portunus.Testing`, and the test packages of `06` PRT-ENG-009 |
 | The sample host and its test project | The packed packages above, and for its tests the sample host itself and the test packages of `06` PRT-ENG-009 |
 
