@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.1] - 2026-11-05
+
 ### Added
 
 - `SecretAddress`, `Secret`, `AgentStatus`, `Result`, `Result<T>`, `Failure`, `SecretsStartupException`, `ISecretClient`, `AgentState`, `WaitReason` and `SetSource`, the public types of `Portunus.Core`.
