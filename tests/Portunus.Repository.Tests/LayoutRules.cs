@@ -133,8 +133,19 @@ internal static partial class LayoutRules
             string code = CSharpSource.Read(File.ReadAllText(file)).Code;
             string where = Path.GetRelativePath(root, file).Replace('\\', '/');
 
+            // The sample host's entry point is top-level statements, so the Web SDK makes its Program public (P-042).
+            bool entryPoint = project.RelativePath.StartsWith("samples/", StringComparison.Ordinal)
+                && !project.Name.EndsWith(".Tests", StringComparison.Ordinal)
+                && string.Equals(relative, "Program.cs", StringComparison.Ordinal);
             Match declared = NamespacePattern().Match(code);
-            if (!declared.Success)
+            if (entryPoint)
+            {
+                if (declared.Success)
+                {
+                    yield return $"{where} declares a namespace, though it is the sample host's top-level statements.";
+                }
+            }
+            else if (!declared.Success)
             {
                 yield return $"{where} declares no namespace.";
             }
