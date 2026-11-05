@@ -193,7 +193,7 @@ public sealed class AssemblyContractProbeTests
 
         string[] violations = [.. NativeRules.ImportViolations("Portunus.Agent.dll", AssemblySurface.NativeImports(probe.Assembly))];
 
-        Assert.Equal(["Portunus.Agent.dll imports the native function getpid of libc, in Portunus.Agent.Native.ProcessId; only the agent imports native code, prctl alone."], violations);
+        Assert.Equal(["Portunus.Agent.dll imports the native function getpid of libc, in Portunus.Agent.Native.ProcessId; only the agent imports native code, prctl, statx and fchownat alone."], violations);
     }
 
     [Fact]

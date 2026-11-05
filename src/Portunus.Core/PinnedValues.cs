@@ -20,6 +20,9 @@ internal sealed class PinnedValues : IDisposable
         return array;
     }
 
+    /// <summary>The arrays this owner holds, for a test's check that they are zeroed (<c>01</c> PRT-AGT-001 criterion 3).</summary>
+    internal IReadOnlyList<byte[]> Arrays => _arrays;
+
     public void Dispose()
     {
         foreach (byte[] array in _arrays)

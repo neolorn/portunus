@@ -1,0 +1,21 @@
+{
+  "Portunus": {
+    "Agent": {
+      "Vault": "Example Production",
+      "Source": "vault",
+      "PushGroup": 2001,
+      "Processes": {
+        "web": {
+          "Uid": 1001,
+          "Gid": 1001,
+          "Secrets": [ "Example/connection", "Themis/connection" ]
+        },
+        "worker": {
+          "Uid": 1002,
+          "Gid": 1002,
+          "Secrets": [ "Example/connection" ]
+        }
+      }
+    }
+  }
+}

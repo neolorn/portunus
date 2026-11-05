@@ -21,6 +21,8 @@ files, the contract tests over the built assemblies, `04` PRT-LIB-001 and PRT-LI
 source project. `tests/Portunus.Fakes` is a console project, not a test project: one
 executable that acts as `op` or as `ssh` by the name it is started under, each answering
 from a scenario file a test names in an environment variable of the fake's own (PRT-ENG-008).
+`tests/Portunus.Agent.Harness` is a console project, not shipped, that builds the agent's
+host through the shipped entry point's own internal method with a test's paths (P-027).
 Each project's namespace root is its name; a file's namespace matches its folder; one
 public top-level type per file. Projects are flat but for two folders of
 `Portunus.Agent`, `Fetch` (the fetch and `op`, `01` section 2) and `Serving` (the sockets,
@@ -171,7 +173,9 @@ validation (`05` PRT-OPS-001); logging through source-generated `LoggerMessage` 
 (`05` PRT-OPS-005); the clock through `TimeProvider`; randomness for the pauses'
 spread through an injected `Random` seeded once; the built-in dependency injection
 container only; hosting through the generic host. Native code is called only by the agent,
-only for `prctl` (`01` PRT-AGT-001), and only through a source-generated `LibraryImport`;
+only for `prctl` (`01` PRT-AGT-001) and for `statx` and `fchownat` with
+`AT_SYMLINK_NOFOLLOW` (`01` PRT-AGT-006, `05` PRT-OPS-001, P-026), and only through a
+source-generated `LibraryImport`;
 the peer's credentials are read with `Socket.GetRawSocketOption`. Every public type and
 member of a shipped project carries XML documentation stating its contract, the failures
 it answers and the faults it throws.
@@ -185,7 +189,7 @@ it answers and the faults it throws.
    project's public member without documentation.
 2. A test fails on a lookup or call of members by name (`System.Reflection` member
    lookups, `Activator`, `Type.GetType`) outside generated code, and on a `DllImport` or a
-   `LibraryImport` outside the agent's one.
+   `LibraryImport` outside the agent's three (P-026).
 
 ---
 
@@ -271,9 +275,13 @@ peer's credentials, file owners and modes, `prctl`, `/proc/swaps`, `SIGTERM`) an
 fifth kind in their own project. The pipeline runs each kind on its own, by that trait; a
 run that finds no test of its kind passes (Microsoft.Testing.Platform's exit code 8 is
 accepted), and a test of `tests/` that carries none of the four kinds, or more than one,
-fails the gate. The `linux` kind runs on the pipeline's runner, and on another machine in
-a container of the .NET SDK's image at the SDK of `global.json`, which
-`build/gates/gate-tests.ps1` starts where it is asked for that kind. An
+fails the gate. The `linux` kind runs as root (P-027): under `sudo` on the pipeline's
+runner, and on another machine in a container of the .NET SDK's image at the SDK of
+`global.json`, as its root, which `build/gates/gate-tests.ps1` starts where it is asked
+for that kind. The agent's start-level tests set its system paths only through internal
+parameters, and its signal tests run `tests/Portunus.Agent.Harness` (P-027). The fake
+`op`'s rate-limited scenario is written from the documented `(429)` class and marked as
+not recorded; every other scenario is recorded by the owner (P-028). An
 acceptance-criterion test is named `ITEM_ACn_Outcome`
 (`PRT_AGT_007_AC2_UndeclaredAddressIsDenied`); every other test
 `Method_Scenario_Outcome`. No mocking package. The fakes are hand-written: the fake `op`

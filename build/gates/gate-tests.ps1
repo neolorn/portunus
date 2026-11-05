@@ -7,9 +7,9 @@
     the four kinds fails the gate before any test runs, since no run, or more than one,
     would take it. A run that finds no test of its kind passes: Microsoft.Testing.Platform's
     exit code 8, for no test run, is accepted. A repository with no test project fails, since
-    the gate would run nothing. Each kind runs on the machine the gate runs on; the run of
-    the linux kind in a container of the .NET SDK's image, on a machine other than Linux,
-    comes with the first linux test, in phase 3 (plan).
+    the gate would run nothing. Each kind runs on the machine the gate runs on, the linux
+    kind as root: under sudo on Linux, and in a container of the .NET SDK's image, whose user
+    is root, on any other machine (P-027).
 .PARAMETER Repository
     The repository whose tests to run; by default, this one.
 #>
@@ -23,12 +23,63 @@ Set-StrictMode -Version Latest
 
 $kinds = 'unit', 'integration', 'linux', 'contract'
 
+# The linux kind runs as root, so owners, groups and chown are real (06 PRT-ENG-008, P-027).
+function Invoke-AsRoot($Project) {
+    $runner = Join-Path $Project.DirectoryName 'bin' 'Release' 'net10.0' $Project.BaseName
+    $arguments = @('--filter-trait', 'Category=linux', '--ignore-exit-code', '8')
+    if ((id -u) -eq '0') {
+        & $runner @arguments
+        return
+    }
+
+    $dotnet = (Get-Command dotnet).Source
+    $root = if ($env:DOTNET_ROOT) { $env:DOTNET_ROOT } else { Split-Path (Resolve-Path $dotnet) }
+    sudo env "PATH=$env:PATH" "DOTNET_ROOT=$root" $runner @arguments
+}
+
+# The SDK's image at the SDK of the gate's global.json, the repository copied into it without its
+# build output and built there, its solution first where it has one, which builds the projects
+# its tests start (the fakes and the harness). A repository inside another work tree takes the
+# build files it inherits from the folders above it, as a build in place would.
+function Invoke-LinuxContainer($Repository, $Projects) {
+    $sdk = (Get-Content (Join-Path $PSScriptRoot '..' '..' 'global.json') -Raw | ConvertFrom-Json).sdk.version
+    $root = (Resolve-Path $Repository).Path
+    $top = git -C $root rev-parse --show-toplevel 2>$null
+    $anchor = if ($LASTEXITCODE -eq 0 -and $top) { (Resolve-Path $top).Path } else { $root }
+    $inherited = @(
+        $folder = $root
+        while ($folder -ne $anchor -and $folder.StartsWith($anchor, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $folder = Split-Path $folder -Parent
+            foreach ($name in 'Directory.Build.props', 'Directory.Build.targets', 'Directory.Packages.props', 'nuget.config', '.editorconfig') {
+                $file = Join-Path $folder $name
+                if (Test-Path -LiteralPath $file -PathType Leaf) {
+                    [System.IO.Path]::GetRelativePath($anchor, $file).Replace('\', '/')
+                }
+            }
+        }
+    )
+    $relative = [System.IO.Path]::GetRelativePath($anchor, $root).Replace('\', '/')
+    $copies = ($inherited | ForEach-Object { "cp '/src/$_' '/work/$_' || exit 1; " }) -join ''
+    $runs = ($Projects | ForEach-Object {
+        $name = $_.BaseName
+        $folder = [System.IO.Path]::GetRelativePath($root, $_.DirectoryName).Replace('\', '/')
+        "echo '== linux tests of $name'; dotnet build ./$folder/$name.csproj --configuration Release -p:RestoreLockedMode=true -nodeReuse:false -v q && ./$folder/bin/Release/net10.0/$name --filter-trait Category=linux --ignore-exit-code 8 || failed=1"
+    }) -join '; '
+    $script = "set -u; mkdir -p '/work/$relative' || exit 1; $copies" +
+        "cd '/src/$relative' && tar --exclude=./tmp --exclude='*/bin' --exclude='*/obj' -cf - . | tar -C '/work/$relative' -xf - && cd '/work/$relative' || exit 1; " +
+        "for solution in *.sln; do [ -e `"`$solution`" ] && { dotnet build `"`$solution`" --configuration Release -p:RestoreLockedMode=true -nodeReuse:false -v q || exit 1; }; done; " +
+        "failed=0; $runs; exit `$failed"
+    docker run --rm --volume "$($anchor):/src:ro" "mcr.microsoft.com/dotnet/sdk:$sdk" bash -c $script | Out-Host
+    return $LASTEXITCODE -eq 0
+}
+
+
 # The integration tests run the scanner this step leaves under tmp/tools/.
 & (Join-Path $PSScriptRoot 'fetch-secret-scanner.ps1') | Out-Null
 
 $projects = @(
     if (Test-Path (Join-Path $Repository 'tests')) {
-        Get-ChildItem -Path (Join-Path $Repository 'tests') -Filter '*.csproj' -Recurse -File |
+        Get-ChildItem -Path (Join-Path $Repository 'tests') -Filter '*.Tests.csproj' -Recurse -File |
             Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } |
             Sort-Object FullName
     }
@@ -60,9 +111,34 @@ if ($unsorted.Count -gt 0) {
 
 $failures = [System.Collections.Generic.List[string]]::new()
 foreach ($kind in $kinds) {
+    if ($kind -eq 'linux' -and -not $IsLinux) {
+        # A repository with no linux test needs no container: each project runs none.
+        if (-not ($tests | Where-Object { $_.Project -in $projects.BaseName -and @($_.Categories) -ccontains 'linux' })) {
+            foreach ($project in $projects) {
+                Write-Host "== linux tests of $($project.BaseName)"
+                Write-Host 'No test of this kind.'
+            }
+
+            continue
+        }
+
+        # On another machine the linux kind runs in a container of the SDK's image, as its root (P-027).
+        Write-Host "== linux tests, in a container of the SDK's image"
+        if (-not (Invoke-LinuxContainer -Repository $Repository -Projects $projects)) {
+            $failures.Add('linux tests in the SDK''s container')
+        }
+        continue
+    }
+
     foreach ($project in $projects) {
         Write-Host "== $kind tests of $($project.BaseName)"
-        dotnet run --project $project.FullName --configuration Release --no-build -- --filter-trait "Category=$kind" --ignore-exit-code 8
+        if ($kind -eq 'linux') {
+            Invoke-AsRoot -Project $project
+        }
+        else {
+            dotnet run --project $project.FullName --configuration Release --no-build -- --filter-trait "Category=$kind" --ignore-exit-code 8
+        }
+
         if ($LASTEXITCODE -ne 0) {
             $failures.Add("$kind tests of $($project.BaseName) (exit code $LASTEXITCODE)")
         }
