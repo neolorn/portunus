@@ -37,16 +37,39 @@ function Invoke-AsRoot($Project) {
     sudo env "PATH=$env:PATH" "DOTNET_ROOT=$root" $runner @arguments
 }
 
-# The SDK's image at the SDK of global.json, the repository copied into it without its build output.
+# The SDK's image at the SDK of the gate's global.json, the repository copied into it without its
+# build output and built there, its solution first where it has one, which builds the projects
+# its tests start (the fakes and the harness). A repository inside another work tree takes the
+# build files it inherits from the folders above it, as a build in place would.
 function Invoke-LinuxContainer($Repository, $Projects) {
-    $sdk = (Get-Content (Join-Path $Repository 'global.json') -Raw | ConvertFrom-Json).sdk.version
+    $sdk = (Get-Content (Join-Path $PSScriptRoot '..' '..' 'global.json') -Raw | ConvertFrom-Json).sdk.version
+    $root = (Resolve-Path $Repository).Path
+    $top = git -C $root rev-parse --show-toplevel 2>$null
+    $anchor = if ($LASTEXITCODE -eq 0 -and $top) { (Resolve-Path $top).Path } else { $root }
+    $inherited = @(
+        $folder = $root
+        while ($folder -ne $anchor -and $folder.StartsWith($anchor, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $folder = Split-Path $folder -Parent
+            foreach ($name in 'Directory.Build.props', 'Directory.Build.targets', 'Directory.Packages.props', 'nuget.config', '.editorconfig') {
+                $file = Join-Path $folder $name
+                if (Test-Path -LiteralPath $file -PathType Leaf) {
+                    [System.IO.Path]::GetRelativePath($anchor, $file).Replace('\', '/')
+                }
+            }
+        }
+    )
+    $relative = [System.IO.Path]::GetRelativePath($anchor, $root).Replace('\', '/')
+    $copies = ($inherited | ForEach-Object { "cp '/src/$_' '/work/$_' || exit 1; " }) -join ''
     $runs = ($Projects | ForEach-Object {
         $name = $_.BaseName
-        $folder = [System.IO.Path]::GetRelativePath($Repository, $_.DirectoryName).Replace('\', '/')
-        "echo '== linux tests of $name'; ./$folder/bin/Release/net10.0/$name --filter-trait Category=linux --ignore-exit-code 8 || failed=1"
+        $folder = [System.IO.Path]::GetRelativePath($root, $_.DirectoryName).Replace('\', '/')
+        "echo '== linux tests of $name'; dotnet build ./$folder/$name.csproj --configuration Release -p:RestoreLockedMode=true -nodeReuse:false -v q && ./$folder/bin/Release/net10.0/$name --filter-trait Category=linux --ignore-exit-code 8 || failed=1"
     }) -join '; '
-    $script = "set -u; mkdir /work && cd /src && tar --exclude=./tmp --exclude='*/bin' --exclude='*/obj' -cf - . | tar -C /work -xf - && cd /work && dotnet build Portunus.sln --configuration Release -p:RestoreLockedMode=true -nodeReuse:false -v q || exit 1; failed=0; $runs; exit `$failed"
-    docker run --rm --volume "$((Resolve-Path $Repository).Path):/src:ro" "mcr.microsoft.com/dotnet/sdk:$sdk" bash -c $script | Out-Host
+    $script = "set -u; mkdir -p '/work/$relative' || exit 1; $copies" +
+        "cd '/src/$relative' && tar --exclude=./tmp --exclude='*/bin' --exclude='*/obj' -cf - . | tar -C '/work/$relative' -xf - && cd '/work/$relative' || exit 1; " +
+        "for solution in *.sln; do [ -e `"`$solution`" ] && { dotnet build `"`$solution`" --configuration Release -p:RestoreLockedMode=true -nodeReuse:false -v q || exit 1; }; done; " +
+        "failed=0; $runs; exit `$failed"
+    docker run --rm --volume "$($anchor):/src:ro" "mcr.microsoft.com/dotnet/sdk:$sdk" bash -c $script | Out-Host
     return $LASTEXITCODE -eq 0
 }
 
