@@ -191,7 +191,7 @@ is RFC 3339 with an offset of zero (`06` PRT-ENG-006).
 | `op` | 2.41.1 (released 2026-10-21), from `https://cache.agilebits.com/dist/1P/op2/pkg/v2.41.1/op_linux_<arch>_v2.41.1.zip`, `<arch>` `amd64` or `arm64` |
 | `op`'s signing key | `3FEF9748469ADBE15DA7CA80AC2D62742012EA22`, as 1Password publishes it for `gpg --verify op.sig op` |
 | The tool's `op` | 2.41.1 or a later 2.x |
-| `Janus.Core` | 1.0.0-rc.4 |
+| `Janus.Hosting` (carrying `Janus.Core`, P-036) | 1.0.0-rc.4 |
 | `Hermes.Core` | 1.0.0-rc.6 |
 | `Themis.Core` | 1.0.0-rc.2 |
 

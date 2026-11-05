@@ -43,9 +43,10 @@ wire formats (`03` PRT-VLT-007; `07` section 6), and from `Portunus` to
 `deploy/` holds `portunus-agent@.service`, `token.conf` (the drop-in of `vault` mode) and
 `example.json`, an agent's configuration for an invented sample environment naming no real
 product or company (checked in review); `07` section 7 gives the unit's settings.
-`vendor/` holds the sibling `Core` packages the adapters build against, at the versions
-of `07` section 7, as their releases published them, with `vendor/SHA256SUMS` listing
-each file's SHA-256; `nuget.config` maps the identifiers `Janus.Core`, `Hermes.Core` and
+`vendor/` holds the sibling packages the adapters build against (`Janus.Hosting`, which
+carries `Janus.Core` (P-036), `Hermes.Core` and `Themis.Core`), at the versions of `07`
+section 7, as their releases published them, with `vendor/SHA256SUMS` listing each
+file's SHA-256; `nuget.config` maps the identifiers `Janus.*`, `Hermes.Core` and
 `Themis.Core` to `vendor/` alone and every other identifier to nuget.org alone, by
 `packageSourceMapping`.
 
@@ -319,7 +320,7 @@ the projects `04` PRT-LIB-001 allows.
 |---|---|---|
 | Hosting abstractions (`Portunus`) | `Microsoft.Extensions.DependencyInjection.Abstractions`, `Microsoft.Extensions.Configuration.Abstractions`, `Microsoft.Extensions.Configuration.Binder`, `Microsoft.Extensions.Options`, `Microsoft.Extensions.Options.ConfigurationExtensions`, `Microsoft.Extensions.Logging.Abstractions`, `Microsoft.Extensions.Hosting.Abstractions`, `Microsoft.Extensions.Diagnostics.HealthChecks` | MIT |
 | Hosting (`Portunus.Agent`) | `Microsoft.Extensions.Hosting`, `Microsoft.Extensions.Hosting.Systemd`, `Microsoft.Extensions.Configuration.Json` | MIT |
-| The siblings (the adapters) | `Janus.Core`, `Hermes.Core`, `Themis.Core`, from `vendor/` at the versions of `07` section 7 | The owner's own |
+| The siblings (the adapters) | `Janus.Hosting` and its dependencies from nuget.org, each listed in the allow-list (P-036); `Hermes.Core`, `Themis.Core`; the siblings' own from `vendor/` at the versions of `07` section 7 | The owner's own; each dependency's own, as listed |
 | Public surface | `Microsoft.CodeAnalysis.PublicApiAnalyzers` (build-only) | MIT |
 | Versioning | `MinVer` (build-only) | Apache 2.0 |
 | Tests | `xunit.v3` | Apache 2.0 |

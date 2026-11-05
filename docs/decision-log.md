@@ -854,3 +854,52 @@ owner's vaults, items and user.
 **Propagated to:**
 - `06` PRT-ENG-008 (the recordings).
 
+## P-036 — The Janus adapter references `Janus.Hosting`
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** P-022, PRT-LIB-001, PRT-ENG-009
+
+**TL;DR.** `Portunus.Janus` references `Janus.Hosting` 1.0.0-rc.4, exactly, the package
+that carries Janus's `Janus.Core` assembly and its `ISecretSource`. Found at phase 5:
+Janus publishes no `Janus.Core` package; its areas ship inside `Janus.Hosting` (Janus
+D-205).
+
+- **Nothing new for a host.** The adapter's only users are Janus's hosts, which reference
+  `Janus.Hosting` already, so the adapter brings them no package they lack.
+- **Portunus's side.** The dependency allow-list gains `Janus.Hosting`'s closure for that
+  one project, checked as every other row is; `vendor/` holds `Janus.Hosting` as Janus's
+  release published it; `nuget.config` maps `Janus.*` to `vendor/` alone.
+- **What stays.** Exact versions (P-022), and the Janus table of PRT-LIB-006, whose
+  type is still `Janus.Core.ISecretSource`, now from `Janus.Hosting`'s assembly.
+
+*Rejected:*
+- **Asking Janus to publish `Janus.Core` on its own:** reverses Janus's D-205 for one
+  consumer, with a Janus release, where the hosts already hold the assembly.
+
+**Propagated to:**
+- `04` PRT-LIB-001 (the adapter's references); `06` PRT-ENG-001 (`vendor/`, `nuget.config`)
+  and PRT-ENG-009 (the siblings' row); `07` section 7 (the pinned package).
+
+## P-037 — A name the table does not list is read as text
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-LIB-006
+
+**TL;DR.** The Hermes and Themis adapters read a name their table does not list as UTF-8
+text and pass it on, logged once at the Information level with the name, instead of
+answering none. Hermes's `smsCequens` (Hermes M-043, its optional package's token) joins
+the table's text names. Found at phase 5: a sibling's optional package adds names of its
+own, and answering none refuses the host's start wherever the package is used.
+
+- **Why text is safe.** A sibling checks each secret's form at its start; a binary key a
+  later release adds, passed on as its base64 text, fails that check by name, so a wrong
+  reading stops the start plainly and never goes unseen. A new binary name joins the
+  table when its sibling's release is taken.
+- **What stays.** The table's forms, the address rule, a denied address answering none
+  with its Warning, and the Janus table, whose members are fixed by Janus's interface.
+
+*Rejected:*
+- **Adding names one by one and answering none to the rest:** every optional package of a
+  sibling would need a Portunus release before a host could use it.
+
+**Propagated to:**
+- `04` PRT-LIB-006 (the Hermes and Themis table, and the unlisted name).
+
