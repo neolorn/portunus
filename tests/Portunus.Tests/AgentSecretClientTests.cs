@@ -44,7 +44,6 @@ public sealed class AgentSecretClientTests : IAsyncDisposable
         Assert.Equal(LogLevel.Warning, wait.Level);
         Assert.StartsWith("waiting for secrets", wait.Message, StringComparison.Ordinal);
         Assert.Contains("Reason=fetching", wait.Members);
-        _log.HoldsNone(First);
     }
 
     [Fact]
@@ -81,6 +80,21 @@ public sealed class AgentSecretClientTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task PRT_LIB_004_AC4_NoLogLineOfTheReadsHoldsAValueTheyUsed()
+    {
+        StartAgent(request => request.Contains("Themis/other", StringComparison.Ordinal)
+            ? Recorded.Failure("ready", "secrets.secret.unknown")
+            : _clock.Elapsed < TimeSpan.FromSeconds(2) ? Recorded.Waiting("fetching") : Recorded.Secret(2, First, Second));
+        AgentSecretClient client = Client();
+
+        await DriveAsync(client.ReadAsync(Connection, TestContext.Current.CancellationToken));
+        await client.ReadAsync(SecretAddress.Parse("Themis/other"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, _log.Lines.Count);
+        _log.HoldsNone(First, Second);
+    }
+
+    [Fact]
     public async Task ReadAsync_SecretOfThreeVersions_AnswersEachInArraysOfItsOwn()
     {
         StartAgent(_ => Recorded.Secret(2, First, Second, Third));
@@ -93,7 +107,6 @@ public sealed class AgentSecretClientTests : IAsyncDisposable
         Assert.Equal([First, Second, Third], secret.Versions.OrderBy(version => version.Key).Select(version => version.Value.ToArray()));
         Assert.Equal("""{"version":1,"kind":"read","address":"Themis/connection"}""", Assert.Single(_agent!.Requests));
         Assert.Empty(_log.Lines);
-        _log.HoldsNone(First, Second, Third);
     }
 
     [Fact]
@@ -218,6 +231,9 @@ public sealed class AgentSecretClientTests : IAsyncDisposable
         {
             await _agent.DisposeAsync();
         }
+
+        // No line the client logged holds a value the test used (05 PRT-OPS-005).
+        _log.HoldsNone(First, Second, Third);
     }
 
     private void StartAgent(Func<string, string?> answer)

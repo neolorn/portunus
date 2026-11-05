@@ -37,7 +37,6 @@ public sealed class ClientFactoryTests : IDisposable
 
         Assert.Equal(Connection, read.Value!.CurrentValue.ToArray());
         Assert.Equal("secrets.secret.unknown", absent.Failure!.Code);
-        _log.HoldsNone(Connection);
     }
 
     [Fact]
@@ -121,7 +120,6 @@ public sealed class ClientFactoryTests : IDisposable
         Assert.Equal(SetSource.Vault, status.Source);
         Assert.Equal(TestClock.Start, status.LoadedAt);
         Assert.Equal(2, status.Items);
-        _log.HoldsNone(Second, Connection);
     }
 
     [Fact]
@@ -135,6 +133,9 @@ public sealed class ClientFactoryTests : IDisposable
     public void Dispose()
     {
         File.Delete(_file);
+
+        // No line the client logged holds a value the test used (05 PRT-OPS-005).
+        _log.HoldsNone(Connection, Second, Recorded.Value("sample-key-first"));
     }
 
     private ISecretClient Make(string environment)

@@ -74,6 +74,9 @@ public sealed class ClientHealthCheckTests : IAsyncDisposable
         {
             await _agent.DisposeAsync();
         }
+
+        // No line the client logged holds a value the test used (05 PRT-OPS-005).
+        _log.HoldsNone(Recorded.Value("sample-connection"));
     }
 
     private async Task<HealthCheckResult> CheckAsync()
