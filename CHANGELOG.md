@@ -15,3 +15,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Values in the wire formats in base64url, unpadded, so JSON never escapes them, and a value's escaped string refused (`06` PRT-ENG-005, P-023).
 - The layout's check of a live and a retired version of one number, `secrets.layout.fieldduplicate`; a secret holding only retired versions passes (`03` PRT-VLT-005, P-024).
 - The secret a set holds at an address, its live versions and its current one, a secret holding only retired versions none (`03` PRT-VLT-004, PRT-VLT-005).
+- The development file's reader, each value a field's text read into a pinned array (`03` PRT-VLT-008).
