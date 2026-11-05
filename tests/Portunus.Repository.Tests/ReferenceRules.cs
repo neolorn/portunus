@@ -125,9 +125,10 @@ internal static class ReferenceRules
     }
 
     /// <summary>
-    /// Answers each item of <c>Directory.Build.props</c> but the CLSCompliant attribute, and each
-    /// item of <c>Directory.Packages.props</c> but a <c>PackageVersion</c>, since such an item
-    /// would reach every project unseen.
+    /// Answers each item of <c>Directory.Build.props</c> but the CLSCompliant attribute and the
+    /// exact-version target's update (<c>06</c> PRT-ENG-011), and each item of
+    /// <c>Directory.Packages.props</c> but a <c>PackageVersion</c>, since such an item would reach
+    /// every project unseen.
     /// </summary>
     private static IEnumerable<string> SharedItemViolations(string root)
     {
@@ -140,9 +141,11 @@ internal static class ReferenceRules
                 XElement? owner = item.Parent!.Parent;
                 bool attribute = owner == item.Document!.Root && string.Equals(name, "AssemblyAttribute", StringComparison.Ordinal)
                     && string.Equals(item.Attribute("Include")?.Value, "System.CLSCompliantAttribute", StringComparison.Ordinal);
-                if (!attribute)
+                bool exactVersion = owner is { Name.LocalName: "Target" } && string.Equals(owner.Attribute("Name")?.Value, "DependOnTheExactVersionPacked", StringComparison.Ordinal)
+                    && string.Equals(name, "_ProjectReferencesWithVersions", StringComparison.Ordinal);
+                if (!attribute && !exactVersion)
                 {
-                    yield return $"Directory.Build.props adds a {name} item {Target(item)}; it adds no item but the CLSCompliant attribute.";
+                    yield return $"Directory.Build.props adds a {name} item {Target(item)}; it adds no item but the CLSCompliant attribute and the exact-version target's update.";
                 }
             }
         }

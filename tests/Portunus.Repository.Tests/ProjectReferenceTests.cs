@@ -167,9 +167,23 @@ public sealed class ProjectReferenceTests
 
         string[] violations = [.. ReferenceRules.ReferenceViolations(fixture.Root)];
 
-        Assert.Contains("Directory.Build.props adds a PackageReference item Microsoft.Extensions.Options; it adds no item but the CLSCompliant attribute.", violations);
+        Assert.Contains("Directory.Build.props adds a PackageReference item Microsoft.Extensions.Options; it adds no item but the CLSCompliant attribute and the exact-version target's update.", violations);
         Assert.Contains("src/Portunus.Core/Portunus.Core.csproj takes the package Microsoft.Extensions.Options by a reference outside its project file, which PRT-LIB-001 does not allow it.", violations);
         Assert.DoesNotContain(violations, violation => violation.Contains("MinVer", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("DependOnTheExactVersionPacked", "PackageReference")]
+    [InlineData("AnotherTarget", "_ProjectReferencesWithVersions")]
+    public void PRT_LIB_001_AC1_ItemInATargetOtherThanTheExactVersionUpdateIsFound(string target, string item)
+    {
+        using RepositoryFixture fixture = new();
+        string props = File.ReadAllText(Path.Combine(fixture.Root, "Directory.Build.props"));
+        fixture.Write("Directory.Build.props", props.Replace("</Project>", $"  <Target Name=\"{target}\"><ItemGroup><{item} Include=\"Microsoft.Extensions.Options\" /></ItemGroup></Target>\n</Project>", StringComparison.Ordinal));
+
+        Assert.Contains(
+            $"Directory.Build.props adds a {item} item Microsoft.Extensions.Options; it adds no item but the CLSCompliant attribute and the exact-version target's update.",
+            ReferenceRules.ReferenceViolations(fixture.Root));
     }
 
     [Fact]
