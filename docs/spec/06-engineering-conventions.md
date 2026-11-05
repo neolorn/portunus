@@ -20,9 +20,11 @@ files, the contract tests over the built assemblies, `04` PRT-LIB-001 and PRT-LI
 `08` PRT-THR-004) live in `tests/Portunus.Repository.Tests`, the one test project with no
 source project. `tests/Portunus.Fakes` is a console project, not a test project: one
 executable that acts as `op` or as `ssh` by the name it is started under, each answering
-from a scenario file a test names in an environment variable of the fake's own (PRT-ENG-008).
+from a scenario file a test names in an environment variable of the fake's own (PRT-ENG-008),
+which a launcher script of the test's sets where the agent starts the fake (P-029).
 `tests/Portunus.Agent.Harness` is a console project, not shipped, that builds the agent's
-host through the shipped entry point's own internal method with a test's paths (P-027).
+host through the shipped entry point's own internal method with a test's paths (P-027),
+and, as `client`, sends a file's bytes on a socket and writes the answer (P-030).
 Each project's namespace root is its name; a file's namespace matches its folder; one
 public top-level type per file. Projects are flat but for two folders of
 `Portunus.Agent`, `Fetch` (the fetch and `op`, `01` section 2) and `Serving` (the sockets,
@@ -279,7 +281,11 @@ fails the gate. The `linux` kind runs as root (P-027): under `sudo` on the pipel
 runner, and on another machine in a container of the .NET SDK's image at the SDK of
 `global.json`, as its root, which `build/gates/gate-tests.ps1` starts where it is asked
 for that kind. The agent's start-level tests set its system paths only through internal
-parameters, and its signal tests run `tests/Portunus.Agent.Harness` (P-027). The fake
+parameters, and its signal tests run `tests/Portunus.Agent.Harness` (P-027). A test that
+runs `op` through the agent sets `Portunus:Agent:OpPath` to a launcher script of its own,
+which sets the fake's variable and starts the fake's `op` (P-029). A test that connects to
+a process's socket starts the harness as `client` under `setpriv` as the declared user
+(P-030). The fake
 `op`'s rate-limited scenario is written from the documented `(429)` class and marked as
 not recorded; every other scenario is recorded by the owner (P-028). An
 acceptance-criterion test is named `ITEM_ACn_Outcome`
