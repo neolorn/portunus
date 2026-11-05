@@ -575,8 +575,8 @@ says those helpers make no copy of their own while they unescape or encode.
   into a writer over a pinned array of the bound's size. A base64url text holds no
   character the writer escapes, so the writer copies it straight into its output.
 - **Reading.** A value's string is refused where `Utf8JsonReader.ValueIsEscaped` is true,
-  as `secrets.request.invalid`, a request outside its format; otherwise the library decodes `ValueSpan` with
-  `Base64Url.DecodeFromUtf8` straight into its pinned array.
+  as `secrets.request.invalid`, a request outside its format; otherwise the library
+  decodes `ValueSpan` with `Base64Url.DecodeFromUtf8` straight into its pinned array.
 - **What `op` prints** is not the library's format. A field's text there may be escaped
   (a password holding a quotation mark), so it is read with `CopyString` into a pinned
   array, and a key's base64 field (`03` PRT-VLT-003) is decoded from that array. What the
