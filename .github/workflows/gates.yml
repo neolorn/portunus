@@ -54,3 +54,80 @@ jobs:
             $head = $env:PUSH_AFTER
           }
           ./build/gates/run-gates.ps1 -Base $base -Head $head
+
+  # A release tag's run alone releases, a release candidate's as a pre-release, once the gates
+  # job has passed on it, and this job alone can write to the repository's contents
+  # (06 PRT-ENG-011).
+  release:
+    needs: gates
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      # The job's token can write to the contents, so the checkout leaves it out of .git/config
+      # while the restore and the build run code of other parties; gh takes it from GH_TOKEN.
+      - name: Check out the whole history at the tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up the SDK of global.json
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      # A release is vX.Y.Z or vX.Y.Z-rc.N, N from 1 (P-017), on its release commit; the tag
+      # filter above lets through some tags of other shapes, and a tag on another commit, which
+      # make no release.
+      - name: Refuse a tag that is no release tag on its release commit
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ($env:TAG -cnotmatch '^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-rc\.[1-9]\d*)?$') {
+            throw "$env:TAG is no release tag."
+          }
+          $subject = [string](git log -1 --format=%s HEAD)
+          if ($LASTEXITCODE -ne 0) { throw "git log failed with exit code $LASTEXITCODE." }
+          $expected = "chore: release $($env:TAG.Substring(1))"
+          if ($subject -cne $expected) {
+            throw "The tag $($env:TAG) is on a commit whose subject is ""$subject"", not ""$expected"", so it releases nothing."
+          }
+
+      - name: Pack every package at the tag's version
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
+        run: ./build/gates/pack-packages.ps1 -Version $env:TAG.Substring(1)
+
+      # The agent is published self-contained and single-file for each runtime, and SHA256SUMS
+      # lists the two executables and the three files of deploy/ in sha256sum's own form.
+      - name: Publish the agent and write SHA256SUMS
+        shell: pwsh
+        run: |
+          ./build/gates/gate-agent-publish.ps1
+          $files = Join-Path 'artifacts' 'release'
+          New-Item -ItemType Directory -Force -Path $files | Out-Null
+          foreach ($runtime in 'linux-x64', 'linux-arm64') {
+            Copy-Item (Join-Path 'tmp' 'publish' $runtime 'Portunus.Agent') (Join-Path $files "portunus-agent-$runtime")
+          }
+          foreach ($file in 'portunus-agent@.service', 'token.conf', 'example.json') {
+            Copy-Item -LiteralPath (Join-Path 'deploy' $file) -Destination $files
+          }
+          $sums = @(Get-ChildItem -Path $files -File | Sort-Object Name | ForEach-Object { "$((Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant())  $($_.Name)" })
+          [System.IO.File]::WriteAllText((Join-Path $files 'SHA256SUMS'), ($sums -join "`n") + "`n")
+
+      - name: Create the tag's release with its notes and files
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          $assets = @(Get-ChildItem -Path artifacts/packages -Filter '*.nupkg' -File | ForEach-Object FullName) + @(Get-ChildItem -Path artifacts/release -File | ForEach-Object FullName) + @('docs/guide/compromise-checklist.md')
+          $arguments = @()
+          if ($env:TAG -cmatch '^v\d+\.\d+\.\d+-rc\.[1-9]\d*$') { $arguments += '--prerelease' }
+          gh release create $env:TAG --verify-tag --title $env:TAG --notes-file RELEASE-NOTES.md @arguments @assets
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed with exit code $LASTEXITCODE." }
