@@ -90,7 +90,7 @@ Members in this order; the spelling is the one written in every wire format and 
 | `portunus status` | `--to <ssh destination>`, `--instance <instance>` | As `portunus-agent status` |
 
 An `<ssh destination>` is 1 to 255 characters of ASCII letters, digits, `.`, `-`, `_` and
-one `@`, not starting with `-`; an `<account>`, 1 to 255 of ASCII letters, digits, `.`,
+at most one `@`, not starting with `-` (P-034); an `<account>`, 1 to 255 of ASCII letters, digits, `.`,
 `-`, `_` and `@`, not starting with `-`.
 
 ---

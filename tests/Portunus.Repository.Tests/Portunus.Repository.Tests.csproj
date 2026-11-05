@@ -13,6 +13,7 @@
     <ProjectReference Include="..\..\src\Portunus.Core\Portunus.Core.csproj" />
     <ProjectReference Include="..\..\src\Portunus\Portunus.csproj" />
     <ProjectReference Include="..\..\src\Portunus.Testing\Portunus.Testing.csproj" />
+    <ProjectReference Include="..\..\src\Portunus.Cli\Portunus.Cli.csproj" />
     <ProjectReference Include="..\..\src\Portunus.Agent\Portunus.Agent.csproj" />
   </ItemGroup>
 

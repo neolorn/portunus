@@ -338,6 +338,12 @@
           "Portunus.Core": "[1.0.0, )"
         }
       },
+      "portunus.cli": {
+        "type": "Project",
+        "dependencies": {
+          "Portunus.Core": "[1.0.0, )"
+        }
+      },
       "portunus.core": {
         "type": "Project"
       },

@@ -14,8 +14,8 @@ namespace Portunus.Agent;
 
 /// <summary>
 /// The running agent (<c>01</c>): it listens on its sockets, and in <c>vault</c> mode fetches
-/// once, trying again after growing pauses until a fetch gives it a set, a set breaks the
-/// layout, or it stops (PRT-AGT-003, PRT-AGT-004). On its stop it lets the reads under way
+/// once, trying again after growing pauses until a fetch or a push gives it a set, a set breaks
+/// the layout, or it stops (PRT-AGT-003, PRT-AGT-004; <c>02</c> PRT-PSH-003). On its stop it lets the reads under way
 /// finish, removes its sockets, and zeroes its set and its token (PRT-AGT-009).
 /// </summary>
 internal sealed class AgentService(AgentSettings settings, AgentToken token, SetHolder holder, AgentServer server, Fetcher fetcher, RetryPolicy retries, TimeProvider time, ILogger<AgentService> log) : IHostedService, IDisposable
@@ -67,15 +67,24 @@ internal sealed class AgentService(AgentSettings settings, AgentToken token, Set
 
     private async Task FetchAsync(CancellationToken stopping)
     {
-        for (int attempt = 1; ; attempt++)
+        // A push that fills the agent ends the attempts (02 PRT-PSH-003).
+        for (int attempt = 1; !holder.IsReady; attempt++)
         {
             holder.Wait(WaitReason.Fetching);
             FetchOutcome outcome = await fetcher.FetchAsync(attempt, token.Value, stopping).ConfigureAwait(false);
             if (outcome is { Set: VaultSet set, Values: PinnedValues values })
             {
-                holder.Fill(set, values, SetSource.Vault);
+                if (holder.TryFill(set, values, SetSource.Vault, replace: false))
+                {
+                    AgentLog.Ready(log, set.Items.Count, "vault");
+                }
+                else
+                {
+                    // A push filled the agent while the fetch ran; the push's set stays.
+                    values.Dispose();
+                }
+
                 token.Drop();
-                AgentLog.Ready(log, set.Items.Count, "vault");
                 return;
             }
 

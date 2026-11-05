@@ -45,13 +45,14 @@ internal static class ReferenceRules
 
     /// <summary>
     /// The library's own projects each part's project may reference, by the rows phase 0 builds:
-    /// the agent's row comes in phase 3, the tool's in phase 4 and the adapters' in phase 5 (plan).
+    /// the agent's row comes in phase 3, the tool's in phase 4, and the adapters' in phase 5 (plan).
     /// </summary>
     private static readonly FrozenDictionary<string, IReadOnlyList<string>> AllowedProjects = new Dictionary<string, IReadOnlyList<string>>
     {
         [Packages.Core] = [],
         [Packages.Client] = [Packages.Core],
         [Packages.Testing] = [Packages.Core, Packages.Client],
+        [Packages.Cli] = [Packages.Core],
         [Packages.Agent] = [Packages.Core],
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
@@ -61,6 +62,7 @@ internal static class ReferenceRules
         [Packages.Core] = [],
         [Packages.Client] = HostingAbstractions,
         [Packages.Testing] = [],
+        [Packages.Cli] = [],
         [Packages.Agent] = Hosting,
     }.ToFrozenDictionary(StringComparer.Ordinal);
 

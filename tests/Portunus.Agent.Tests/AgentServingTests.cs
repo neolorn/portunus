@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -85,6 +86,75 @@ public sealed class AgentServingTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task PRT_AGT_006_AC3_ClientHoldingTheDirectoryReachesTheNewSocket()
+    {
+        await StartAsync();
+        ulong web = Native.Ownership(Web)!.Inode;
+
+        await StopAsync();
+        await StartAsync();
+        string answer = await Harness.ClientAsync(_files, Path.Combine(Web, "agent.sock"), Harness.Request("""{"version":1,"kind":"status"}"""));
+
+        Assert.Equal(web, Native.Ownership(Web)!.Inode);
+        Assert.StartsWith("""{"version":1,"state":"waiting","reason":"awaitingpush","since":""", answer, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PRT_AGT_007_AC2_UndeclaredAddressIsDeniedWhileWaiting()
+    {
+        await StartAsync();
+
+        string answer = await Harness.ClientAsync(_files, Path.Combine(Web, "agent.sock"), Harness.Request("""{"version":1,"kind":"read","address":"Janus/keys"}"""));
+
+        Assert.Equal("""{"version":1,"state":"waiting","failure":{"code":"secrets.secret.denied","details":{}}}""", answer);
+        Assert.Contains(_log.Lines, line => line == "read by web of Janus/keys: secrets.secret.denied");
+    }
+
+    [Fact]
+    public async Task PRT_AGT_008_AC1_DeclaredReadWhileWaitingAnswersWaitingAndItsReasonAtOnce()
+    {
+        await StartAsync();
+
+        Stopwatch answered = Stopwatch.StartNew();
+        string answer = await Harness.ClientAsync(_files, Path.Combine(Web, "agent.sock"), Harness.Request("""{"version":1,"kind":"read","address":"Themis/connection"}"""));
+
+        Assert.StartsWith("""{"version":1,"state":"waiting","reason":"awaitingpush","since":""", answer, StringComparison.Ordinal);
+        Assert.True(answered.Elapsed < TimeSpan.FromSeconds(5), "The answer waited.");
+        Assert.Contains(_log.Lines, line => line == "read by web of Themis/connection: waiting");
+    }
+
+    [Fact]
+    public async Task PRT_AGT_008_AC3_RequestOverFourKibibytesIsClosedWithoutAnAnswer()
+    {
+        await StartAsync();
+        byte[] request = Harness.Request("""{"version":1,"kind":"read","address":"Themis/connection"}""" + new string(' ', 4096));
+
+        string answer = await Harness.ClientAsync(_files, Path.Combine(Web, "agent.sock"), request[..4097]);
+
+        Assert.Equal("no answer\n", answer);
+    }
+
+    [Fact]
+    public async Task PRT_AGT_008_AC3_RequestNotFinishedWithinFiveSecondsIsClosedWithoutAnAnswer()
+    {
+        await StartAsync();
+
+        string answer = await Harness.ClientAsync(_files, Path.Combine(Web, "agent.sock"), Harness.Request("""{"version":1,"kind":"status"}"""), pause: TimeSpan.FromSeconds(6));
+
+        Assert.Equal("no answer\n", answer);
+    }
+
+    [Fact]
+    public async Task PRT_AGT_008_AC4_PushOnAProcessSocketAnswersRequestInvalid()
+    {
+        await StartAsync();
+
+        string answer = await Harness.ClientAsync(_files, Path.Combine(Web, "agent.sock"), Harness.Request("""{"version":1,"kind":"push","vault":"Sample Test","replace":false,"items":[{"title":"Themis","fields":[{"label":"connection","value":"AAEC"}]}]}"""));
+
+        Assert.Equal("""{"version":1,"state":"waiting","failure":{"code":"secrets.request.invalid","details":{}}}""", answer);
+    }
+
+    [Fact]
     public async Task PRT_AGT_005_AC1_PushAgentAnswersWaitingForAPushOnThePushSocket()
     {
         await StartAsync();
@@ -124,7 +194,7 @@ public sealed class AgentServingTests : IAsyncDisposable
         using StringWriter output = new();
         using StringWriter error = new();
 
-        int exit = await AgentCommand.MainAsync(["status", AgentFiles.Instance], _files.Paths, output, error);
+        int exit = await AgentCommand.MainAsync(["status", AgentFiles.Instance], _files.Paths, Stream.Null, output, error);
 
         Assert.Equal(3, exit);
         Assert.StartsWith("""{"version":1,"state":"waiting","reason":"awaitingpush",""", output.ToString(), StringComparison.Ordinal);
@@ -138,7 +208,7 @@ public sealed class AgentServingTests : IAsyncDisposable
         using StringWriter output = new();
         using StringWriter error = new();
 
-        int exit = await AgentCommand.MainAsync(["status", AgentFiles.Instance], _files.Paths, output, error);
+        int exit = await AgentCommand.MainAsync(["status", AgentFiles.Instance], _files.Paths, Stream.Null, output, error);
 
         Assert.Equal(1, exit);
         Assert.Equal("""{"code":"secrets.agent.unreachable","details":{}}""", error.ToString().Trim());

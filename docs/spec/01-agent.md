@@ -66,7 +66,8 @@ standard error and exiting 1, where:
   `secrets.agent.opversion`, `details.found` the version answered, or empty where `op`
   does not run;
 - in `vault` mode, the token file cannot be read, is empty or is over 4 KiB:
-  `secrets.agent.tokenunavailable`.
+  `secrets.agent.tokenunavailable`; a file holding one line ending alone is empty
+  (PRT-AGT-003, P-031).
 
 Two instances MAY run on one server, each with its own configuration, vault, sockets and
 unit (`portunus-agent@<instance>.service`).
@@ -109,13 +110,14 @@ secret (P-011). Values are copied from the JSON as their UTF-8 bytes
 `03` PRT-VLT-001 to PRT-VLT-006: where it passes, it becomes the agent's set at once,
 whole; where it fails, nothing of it is kept.
 
-The token is read from `Portunus:Agent:TokenFile` into a pinned array at the start,
-converted to a `string` only to set the child process's environment, as .NET's process
-API requires, and zeroed with the array, and dropped, once a fetch succeeds or a push
-fills the agent (`02` PRT-PSH-003). A running agent holds no token after that, and a
-restart is the only way it fetches again.
+The token is read from `Portunus:Agent:TokenFile` into a pinned array at the start, as
+the file holds it less one final line ending (`\n` or `\r\n`, P-031), converted to a
+`string` only to set the child process's environment, as .NET's process API requires, and
+zeroed with the array, and dropped, once a fetch succeeds or a push fills the agent
+(`02` PRT-PSH-003). A running agent holds no token after that, and a restart is the only
+way it fetches again.
 
-*Source: P-004, P-005, P-006, P-011*
+*Source: P-004, P-005, P-006, P-011, P-031*
 
 **Acceptance criteria**
 1. With the fake `op` (`06` PRT-ENG-008) holding a vault of four valid items, the agent
@@ -204,10 +206,10 @@ own sockets when it stops. A process reaches its socket by having its directory,
 nothing else of the instance, mounted into its container, or by its path on the host. On
 every connection to a process's socket the agent reads the peer's credentials
 (`SO_PEERCRED`) and closes the connection without an answer where the peer's user
-identifier is not the declared one, logging the refusal with the process's name and the
-peer's identifier.
+identifier is not the declared one, or cannot be read (P-032), logging the refusal with
+the process's name and the peer's identifier, or the peer as unknown.
 
-*Source: P-007*
+*Source: P-007, P-032*
 
 **Acceptance criteria**
 1. After a start, each declared process's directory and socket have the owner, group and

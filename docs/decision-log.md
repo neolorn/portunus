@@ -704,6 +704,153 @@ Every other scenario is recorded by the owner. Found at phase 3: provoking a rea
 spends the whole account's daily allowance of 1,000 reads, which every service account on
 the account shares, and so stops every environment's starts for a day.
 
+- **A version other than the pinned one** (`01` PRT-AGT-002's `secrets.agent.opversion`)
+  is written too, from the owner's recording of `op --version` with its version changed,
+  and marked the same way: the pinned `op` never answers another version.
+
 **Propagated to:**
 - `06` PRT-ENG-008 (the scenarios).
+
+## P-029 — A test runs the fake `op` through a launcher of its own
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-001, PRT-ENG-008
+
+**TL;DR.** A test that runs `op` through the agent writes, in its own temporary directory,
+an executable POSIX shell script that sets the fake's scenario variable and starts the
+fake's `op` with the arguments it was given, and sets `Portunus:Agent:OpPath` to that
+script. Found at phase 3: the agent starts `op` in an environment of three variables
+alone (`01` PRT-AGT-003), so the fake never sees a variable the test sets.
+
+- **The script:** `#!/bin/sh`, then
+  `PORTUNUS_FAKES_SCENARIO='<scenario file>' exec '<the fake's op>' "$@"`; owned by root,
+  mode `0755`, written and removed by the test.
+- **The environment's check.** The fake records its environment's names; PRT-AGT-003
+  criterion 1 checks them less the fake's own variable, which the script added after the
+  agent's start.
+- **What stays.** The agent's code, its environment rule and `OpPath`'s rule; the fake's
+  variable and its scenario files.
+
+*Rejected:*
+- **The agent passing the fake's variable through:** a test switch in the shipped
+  executable, which P-027 forbids.
+- **The fake reading its scenario from `HOME`:** a test's file in the agent's own
+  directory, which the agent makes and owns.
+
+**Propagated to:**
+- `06` PRT-ENG-001 (the fakes) and PRT-ENG-008 (the launcher).
+
+## P-030 — The harness is the client of a process's socket in the tests
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-001, PRT-ENG-008
+
+**TL;DR.** `tests/Portunus.Agent.Harness` takes a second role, `client`: it connects to the
+socket it is given, sends the request bytes of a file it is given, shuts down its sending
+side, and writes the answer's bytes, or that none came, to standard output. A test starts
+it under `setpriv --reuid=<uid> --regid=<gid> --clear-groups` as the declared process's
+user. Found at phase 3: the `linux` tests run as root, a declaration never names root, and
+.NET starts no child as another user, so every connection a test makes to a process's
+socket is refused by the peer check.
+
+- **Raw bytes,** so the tests of PRT-AGT-008 send a request over 4 KiB, a slow one, and
+  one of a kind the socket does not take. For 64 connections at once, a test starts that
+  many clients, or the role takes a count; the implementer's choice.
+- **The user** is a number a test picks, which needs no entry in `/etc/passwd`. Where the
+  harness's files cannot be read by that user, the test copies them where they can.
+- **`setpriv`** is part of `util-linux`, present on the pipeline's runner and in the SDK's
+  image; nothing is installed.
+
+*Rejected:*
+- **The fakes taking the role:** they stand in for outside programs (`op`, `ssh`); a
+  client stands in for a host.
+- **`socat` or `nc -U`:** a package to install in the container and on the runner.
+
+**Propagated to:**
+- `06` PRT-ENG-001 (the harness) and PRT-ENG-008 (the client).
+
+## P-031 — The token file's final line ending is not the token's
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-AGT-002, PRT-AGT-003
+
+**TL;DR.** The agent reads the token as the file holds it, less one final line ending
+(`\n` or `\r\n`), and a file holding nothing else counts as empty
+(`secrets.agent.tokenunavailable`). Found at phase 3: a file written by an editor or by
+`echo` ends with a line ending, which `op` would take as part of the token.
+
+- **Only one, only at the end.** Any other byte stays, so a token is never altered beyond
+  what a text file adds; a token with a space or a second line fails at the vault as it
+  is.
+
+*Rejected:*
+- **Trimming all white space:** silently changes a file that is wrong in another way.
+- **Refusing a final line ending:** fails the most common way of writing the file.
+
+**Propagated to:**
+- `01` PRT-AGT-002 (the empty file) and PRT-AGT-003 (the token's reading).
+
+## P-032 — A peer whose credentials cannot be read is refused
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-AGT-006
+
+**TL;DR.** On a process's socket, a connection whose `SO_PEERCRED` cannot be read is
+closed without an answer and logged as refused, as one from another user is. Found in the
+review of phase 3: the agent served such a connection, unchecked.
+
+- **The log** names the process and gives the peer as unknown.
+
+**Propagated to:**
+- `01` PRT-AGT-006 (the peer check).
+
+## P-033 — The tool names an option as it is written
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-PSH-002
+
+**TL;DR.** `secrets.cli.inputinvalid`'s `details.member` names the option as the owner
+types it, with its dashes (`--vault`, `--to`, `--instance`, `--account`), as the agent's
+refusals name a configuration key as the file writes it. Found at phase 4.
+
+*Rejected:*
+- **The bare name (`vault`):** names nothing the owner typed.
+
+**Propagated to:**
+- `02` PRT-PSH-002 (the refusal); `07` section 1 (the code's details).
+
+## P-034 — An SSH destination holds at most one `@`
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-PSH-002
+
+**TL;DR.** An `<ssh destination>` holds at most one `@`, so a host alone, or an alias of
+the owner's SSH configuration, is a destination, and `ssh` takes the user from that
+configuration. Found at phase 4: `07` section 3 read "one `@`".
+
+- **What stays.** The characters, the length and "not starting with `-`", so a destination
+  is never read as an option of `ssh`, which also gets it after `--`.
+
+*Rejected:*
+- **Exactly one `@`:** refuses the owner's aliases, which carry the user and the key.
+
+**Propagated to:**
+- `07` section 3 (the destination's rule).
+
+## P-035 — The recordings carry no identifier of the owner's account
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-008
+
+**TL;DR.** `build/record-op-scenarios.ps1` replaces every 1Password identifier it records
+(vaults, items, users, accounts) with a placeholder of the same form, the same identifier
+always the same placeholder across every file, before it writes anything. Found at
+phase 4: the scenario files go into a public repository, and a recording names the
+owner's vaults, items and user.
+
+- **The shape stays recorded:** keys, nesting, lengths and alphabets are 1Password's own,
+  so the agent still reads what the pinned `op` writes (P-005); only the values of
+  identifiers change.
+- **A run that finds an identifier left** in what it wrote, or a token, removes every
+  file it wrote and exits 1.
+
+*Rejected:*
+- **Recording as is:** the owner's account structure in a public repository, for nothing a
+  test needs.
+
+**Propagated to:**
+- `06` PRT-ENG-008 (the recordings).
 

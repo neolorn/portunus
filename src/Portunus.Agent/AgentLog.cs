@@ -33,8 +33,11 @@ internal static partial class AgentLog
     [LoggerMessage(EventId = 7, Level = LogLevel.Information, Message = "read by {Process} of {Address}: {Outcome}")]
     internal static partial void Read(ILogger logger, string process, Portunus.Core.SecretAddress address, string outcome);
 
-    [LoggerMessage(EventId = 8, Level = LogLevel.Warning, Message = "connection to {Process}'s socket refused: peer user {Uid}")]
-    internal static partial void PeerRefused(ILogger logger, string process, uint uid);
+    [LoggerMessage(EventId = 8, Level = LogLevel.Warning, Message = "connection to {Process}'s socket refused: peer user {Peer}")]
+    internal static partial void PeerRefused(ILogger logger, string process, string peer);
+
+    [LoggerMessage(EventId = 10, Level = LogLevel.Information, Message = "push from peer user {Peer}: {Outcome}, {Items} items")]
+    internal static partial void Push(ILogger logger, string peer, string outcome, int items);
 
     [LoggerMessage(EventId = 9, Level = LogLevel.Information, Message = "agent {Instance} stopped")]
     internal static partial void Stopped(ILogger logger, string instance);

@@ -82,6 +82,31 @@ public sealed class AgentStartTests : IDisposable
         AssertRefusal(line, "secrets.agent.declarationinvalid", ("member", "Secrets"), ("process", "web"));
     }
 
+    [Fact]
+    public async Task PRT_AGT_002_AC1_OpThatDoesNotRunStopsTheStartWithOpVersionFoundEmpty()
+    {
+        string missing = Path.Combine(_files.Folder, "missing");
+        _files.WriteConfiguration(("Source", "\"vault\""), ("OpPath", $"\"{missing}\""), ("TokenFile", $"\"{missing}\""));
+
+        (int exit, JsonElement line) = await RunAsync();
+
+        Assert.Equal(1, exit);
+        AssertRefusal(line, "secrets.agent.opversion", ("found", string.Empty));
+    }
+
+    [Fact]
+    public async Task PRT_AGT_002_AC1_OpAnsweringNoVersionStopsTheStartHavingRunOnlyOpVersion()
+    {
+        FakeOp op = FakeOp.AnsweringNothing(_files);
+        string missing = Path.Combine(_files.Folder, "missing");
+        _files.WriteConfiguration(("Source", "\"vault\""), ("OpPath", $"\"{op.Launcher}\""), ("TokenFile", $"\"{missing}\""));
+
+        (int exit, JsonElement line) = await RunAsync();
+
+        Assert.Equal(1, exit);
+        AssertRefusal(line, "secrets.agent.opversion", ("found", string.Empty));
+        Assert.Equal(["--version"], Assert.Single(op.Calls()));
+    }
     [Theory]
     [InlineData("go")]
     [InlineData("run")]
@@ -92,7 +117,7 @@ public sealed class AgentStartTests : IDisposable
         using StringWriter error = new();
 
         ArgumentNullException.ThrowIfNull(command);
-        int exit = await AgentCommand.MainAsync(command.Split(' '), _files.Paths, output, error);
+        int exit = await AgentCommand.MainAsync(command.Split(' '), _files.Paths, Stream.Null, output, error);
 
         Assert.Equal(1, exit);
         Assert.Equal("""{"code":"secrets.fault","details":{}}""", error.ToString().Trim());
@@ -119,7 +144,7 @@ public sealed class AgentStartTests : IDisposable
     {
         using StringWriter output = new();
         using StringWriter error = new();
-        int exit = await AgentCommand.MainAsync(["run", AgentFiles.Instance], _files.Paths, output, error);
+        int exit = await AgentCommand.MainAsync(["run", AgentFiles.Instance], _files.Paths, Stream.Null, output, error);
         string[] lines = error.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries);
         Assert.Single(lines);
         Assert.Empty(output.ToString());
