@@ -226,6 +226,127 @@ public sealed class AssemblyContractProbeTests
         Assert.Empty(NativeRules.SourceViolations(fixture.Root));
     }
 
+    [Fact]
+    public async Task PRT_ENG_007_AC1_CodeTheReferenceDoesNotListIsFound()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ScratchFolder folder = new();
+        ProbeProject probe = new(folder, "Probe");
+        probe.WriteProject(string.Empty);
+        probe.WriteSource("Codes.cs", """
+            namespace Probe;
+
+            /// <summary>Codes, listed and not.</summary>
+            public static class Codes
+            {
+                /// <summary>A constant no code uses.</summary>
+                public const string Unused = "secrets.made.up";
+
+                /// <summary>Answers codes.</summary>
+                /// <returns>The codes.</returns>
+                public static string[] Answer()
+                {
+                    return ["secrets.secret.denied", "secrets.other.code", "secrets. not a code", "Secrets.Upper"];
+                }
+            }
+            """);
+        ProcessResult build = await probe.BuildAsync(cancellationToken, "-p:TreatWarningsAsErrors=false", "-p:MSBuildTreatWarningsAsErrors=false");
+        Assert.True(build.ExitCode == 0, build.Output);
+
+        string[] violations = [.. NamingRules.CodeViolations("Probe.dll", AssemblySurface.Strings(probe.Assembly))];
+
+        Assert.Equal(
+            [
+                "Probe.dll answers the code secrets.made.up, which 07 section 1 does not list.",
+                "Probe.dll answers the code secrets.other.code, which 07 section 1 does not list.",
+            ],
+            violations);
+    }
+
+    [Fact]
+    public async Task PRT_ENG_007_AC1_EnumerationOutsideTheReferenceIsFound()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ScratchFolder folder = new();
+        ProbeProject probe = new(folder, "Probe");
+        probe.WriteProject(string.Empty);
+        probe.WriteSource("Enumerations.cs", """
+            using System.Text.Json.Serialization;
+
+            namespace Probe;
+
+            /// <summary>In another order.</summary>
+            public enum AgentState
+            {
+                /// <summary>Ready.</summary>
+                [JsonStringEnumMemberName("ready")]
+                Ready,
+
+                /// <summary>Waiting.</summary>
+                [JsonStringEnumMemberName("waiting")]
+                Waiting,
+            }
+
+            /// <summary>Spelled otherwise, and without a spelling.</summary>
+            public enum SetSource
+            {
+                /// <summary>The vault.</summary>
+                [JsonStringEnumMemberName("Vault")]
+                Vault,
+
+                /// <summary>A push.</summary>
+                Push,
+            }
+
+            /// <summary>As the reference gives it.</summary>
+            public enum WaitReason
+            {
+                /// <summary>A member.</summary>
+                [JsonStringEnumMemberName("fetching")]
+                Fetching,
+
+                /// <summary>A member.</summary>
+                [JsonStringEnumMemberName("unreachable")]
+                Unreachable,
+
+                /// <summary>A member.</summary>
+                [JsonStringEnumMemberName("ratelimited")]
+                RateLimited,
+
+                /// <summary>A member.</summary>
+                [JsonStringEnumMemberName("refused")]
+                Refused,
+
+                /// <summary>A member.</summary>
+                [JsonStringEnumMemberName("layoutinvalid")]
+                LayoutInvalid,
+
+                /// <summary>A member.</summary>
+                [JsonStringEnumMemberName("awaitingpush")]
+                AwaitingPush,
+            }
+
+            /// <summary>Not in the reference.</summary>
+            public enum Colour
+            {
+                /// <summary>A member.</summary>
+                Red,
+            }
+            """);
+        ProcessResult build = await probe.BuildAsync(cancellationToken, "-p:TreatWarningsAsErrors=false", "-p:MSBuildTreatWarningsAsErrors=false");
+        Assert.True(build.ExitCode == 0, build.Output);
+
+        string[] violations = [.. NamingRules.SpellingViolations(AssemblySurface.Enumerations(probe.Assembly))];
+
+        Assert.Equal(
+            [
+                "Probe.AgentState declares Ready (ready), Waiting (waiting), not Waiting (waiting), Ready (ready) as 07 section 2 gives them.",
+                "Probe.Colour is an enumeration 07 section 2 does not give.",
+                "Probe.SetSource declares Vault (Vault), Push (no spelling), not Vault (vault), Push (push) as 07 section 2 gives them.",
+            ],
+            violations);
+    }
+
     private static async Task<ProbeProject> BuildNativeProbeAsync(ScratchFolder folder, string name, CancellationToken cancellationToken)
     {
         // A LibraryImport's generated code is unsafe, which a probe of any name may build.

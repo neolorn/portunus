@@ -34,6 +34,16 @@ internal static class PublicTypeTable
         entry => entry.Value.Select(type => entry.Key + "." + type).ToFrozenSet(StringComparer.Ordinal),
         StringComparer.Ordinal);
 
+    /// <summary>Answers each type the tables give <paramref name="part"/> that <paramref name="types"/> does not hold.</summary>
+    internal static IEnumerable<string> MissingTypes(string part, IEnumerable<PublicType> types)
+    {
+        HashSet<string> declared = [.. types.Select(type => type.Name)];
+        return Types.GetValueOrDefault(part, FrozenSet<string>.Empty)
+            .Where(name => !declared.Contains(name))
+            .Order(StringComparer.Ordinal)
+            .Select(name => $"{part} does not declare the public type {name}, which 04 PRT-LIB-002 gives.");
+    }
+
     /// <summary>Answers each public type of <paramref name="part"/> whose name the tables do not give.</summary>
     internal static IEnumerable<string> Violations(string part, IEnumerable<PublicType> types)
     {
