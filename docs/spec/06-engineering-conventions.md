@@ -285,9 +285,10 @@ parameters, and its signal tests run `tests/Portunus.Agent.Harness` (P-027). A t
 runs `op` through the agent sets `Portunus:Agent:OpPath` to a launcher script of its own,
 which sets the fake's variable and starts the fake's `op` (P-029). A test that connects to
 a process's socket starts the harness as `client` under `setpriv` as the declared user
-(P-030). The fake
-`op`'s rate-limited scenario is written from the documented `(429)` class and marked as
-not recorded; every other scenario is recorded by the owner (P-028). An
+(P-030). The fake `op`'s rate-limited scenario is written from the documented `(429)`
+class, and its scenario of a version other than the pinned one from the recorded version
+with the version changed, each marked as not recorded; every other scenario is recorded
+by the owner (P-028). An
 acceptance-criterion test is named `ITEM_ACn_Outcome`
 (`PRT_AGT_007_AC2_UndeclaredAddressIsDenied`); every other test
 `Method_Scenario_Outcome`. No mocking package. The fakes are hand-written: the fake `op`

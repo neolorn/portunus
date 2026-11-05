@@ -704,6 +704,10 @@ Every other scenario is recorded by the owner. Found at phase 3: provoking a rea
 spends the whole account's daily allowance of 1,000 reads, which every service account on
 the account shares, and so stops every environment's starts for a day.
 
+- **A version other than the pinned one** (`01` PRT-AGT-002's `secrets.agent.opversion`)
+  is written too, from the owner's recording of `op --version` with its version changed,
+  and marked the same way: the pinned `op` never answers another version.
+
 **Propagated to:**
 - `06` PRT-ENG-008 (the scenarios).
 
