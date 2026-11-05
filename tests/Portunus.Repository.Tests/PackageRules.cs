@@ -24,6 +24,9 @@ internal static class PackageRules
         ReferenceRules.PublicApiAnalyzers,
         ReferenceRules.MinVer,
         .. ReferenceRules.TestPackages,
+
+        // The library's own packages, which the sample host alone references (04 PRT-LIB-001).
+        .. Packages.Packed,
     ];
 
     /// <summary>Mocking packages, none of which a project may take, directly or not.</summary>

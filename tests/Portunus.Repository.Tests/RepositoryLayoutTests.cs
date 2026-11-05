@@ -102,7 +102,7 @@ public sealed class RepositoryLayoutTests
         using RepositoryFixture fixture = new();
         fixture.WriteProject($"src/{part}/{part}.csproj", string.Empty);
         fixture.WriteProject($"tests/{part}.Tests/{part}.Tests.csproj", string.Empty);
-        fixture.WriteSolution([.. ProjectFile.ReadAll(fixture.Root).Select(project => project.RelativePath)]);
+        fixture.WriteSolution([.. ProjectFile.ReadAll(fixture.Root).Select(project => project.RelativePath).Where(path => !path.StartsWith("samples/", StringComparison.Ordinal))]);
 
         Assert.Empty(LayoutRules.ProjectViolations(fixture.Root));
     }
