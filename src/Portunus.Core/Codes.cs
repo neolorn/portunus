@@ -53,6 +53,32 @@ internal static class Codes
     /// <summary>A request of another protocol version; its detail <c>version</c> is the agent's.</summary>
     internal const string RequestVersion = "secrets.request.version";
 
+    /// <summary>A push for another vault (<c>02</c> PRT-PSH-003).</summary>
+    internal const string PushWrongVault = "secrets.push.wrongvault";
+
+    /// <summary>A push into a <c>ready</c> agent without <c>replace</c> (<c>02</c> PRT-PSH-003).</summary>
+    internal const string PushReady = "secrets.push.ready";
+
+    /// <summary>A pushed set breaks the layout; its details <c>item</c> and <c>field</c> name its first finding (<c>02</c> PRT-PSH-003).</summary>
+    internal const string PushLayoutInvalid = "secrets.push.layoutinvalid";
+
+    /// <summary>A payload over its limit (<c>02</c> PRT-PSH-003).</summary>
+    internal const string PushTooLarge = "secrets.push.toolarge";
+
+    /// <summary><c>receive</c> cannot reach the push socket, or the tool cannot reach the server (<c>02</c> PRT-PSH-002, PRT-PSH-003).</summary>
+    internal const string PushUnreachable = "secrets.push.unreachable";
+
+    /// <summary>An option of the tool missing or outside its rule; its detail <c>member</c> names it (<c>02</c> PRT-PSH-002).</summary>
+    internal const string CliInputInvalid = "secrets.cli.inputinvalid";
+
+    /// <summary>The computer's <c>op</c> is below the pinned version or of another major version; its detail <c>found</c> is what it answered (<c>02</c> PRT-PSH-002).</summary>
+    internal const string CliOpVersion = "secrets.cli.opversion";
+
+    /// <summary>An <c>op</c> command of the tool failed; its detail <c>step</c> is <c>list</c> or <c>get</c> (<c>02</c> PRT-PSH-002).</summary>
+    internal const string CliOpFailed = "secrets.cli.opfailed";
+
+    /// <summary>No <c>ssh</c> on the <c>PATH</c> (<c>02</c> PRT-PSH-002).</summary>
+    internal const string CliSshMissing = "secrets.cli.sshmissing";
     /// <summary>A vault title outside its rule (<c>03</c> PRT-VLT-001).</summary>
     internal const string LayoutVaultTitle = "secrets.layout.vaulttitle";
 

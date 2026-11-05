@@ -35,21 +35,49 @@ internal sealed class SetHolder(TimeProvider time) : IDisposable
         }
     }
 
-    /// <summary>Takes <paramref name="set"/>, whose values <paramref name="values"/> owns, as the agent's set, at once and whole; a set it replaces is zeroed once no read holds it.</summary>
-    internal void Fill(VaultSet set, PinnedValues values, SetSource source)
+    /// <summary>
+    /// Takes <paramref name="set"/>, whose values <paramref name="values"/> owns, as the agent's
+    /// set, at once and whole, where the holder waits or <paramref name="replace"/> is set, and
+    /// answers whether it did; a set it replaces is zeroed once no read holds it. A set it does
+    /// not take stays its caller's.
+    /// </summary>
+    internal bool TryFill(VaultSet set, PinnedValues values, SetSource source, bool replace)
     {
         ArgumentNullException.ThrowIfNull(set);
         ArgumentNullException.ThrowIfNull(values);
         Held? replaced;
         lock (_lock)
         {
+            if (_held is not null && !replace)
+            {
+                return false;
+            }
+
             replaced = _held;
             DateTimeOffset now = time.GetUtcNow();
             _held = new Held(set, values, source, now);
-            _since = now;
+
+            // A replaced set keeps the instant the agent became ready; the new one has its own load.
+            if (replaced is null)
+            {
+                _since = now;
+            }
         }
 
         replaced?.Retire();
+        return true;
+    }
+
+    /// <summary>Whether the holder is ready.</summary>
+    internal bool IsReady
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _held is not null;
+            }
+        }
     }
 
     /// <summary>Leases the state as it is now, for one answer.</summary>
@@ -93,7 +121,7 @@ internal sealed class SetHolder(TimeProvider time) : IDisposable
         {
             _held = held;
             Reason = reason;
-            Since = held?.LoadedAt ?? since;
+            Since = since;
         }
 
         /// <summary>The state.</summary>
@@ -110,6 +138,9 @@ internal sealed class SetHolder(TimeProvider time) : IDisposable
 
         /// <summary>Where the set came from, while ready.</summary>
         internal SetSource Source => _held?.Source ?? SetSource.Vault;
+
+        /// <summary>The instant the set was loaded, while ready.</summary>
+        internal DateTimeOffset LoadedAt => _held?.LoadedAt ?? Since;
 
         public void Dispose()
         {

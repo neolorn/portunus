@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.IO;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
@@ -16,13 +17,19 @@ namespace Portunus.Agent.Harness;
 /// </summary>
 internal static class Program
 {
-    private static Task<int> Main(string[] args)
+    private static async Task<int> Main(string[] args)
     {
-        return args switch
+        switch (args)
         {
-            ["client", string socket, string request] => Client.RunAsync(socket, request, TimeSpan.Zero),
-            ["client", string socket, string request, string pause] => Client.RunAsync(socket, request, TimeSpan.FromMilliseconds(int.Parse(pause, CultureInfo.InvariantCulture))),
-            _ => AgentCommand.MainAsync(args[2..], new AgentPaths(args[0], args[1]), Console.Out, Console.Error),
-        };
+            case ["client", string socket, string request]:
+                return await Client.RunAsync(socket, request, TimeSpan.Zero).ConfigureAwait(false);
+            case ["client", string socket, string request, string pause]:
+                return await Client.RunAsync(socket, request, TimeSpan.FromMilliseconds(int.Parse(pause, CultureInfo.InvariantCulture))).ConfigureAwait(false);
+            default:
+                using (Stream input = Console.OpenStandardInput())
+                {
+                    return await AgentCommand.MainAsync(args[2..], new AgentPaths(args[0], args[1]), input, Console.Out, Console.Error).ConfigureAwait(false);
+                }
+        }
     }
 }

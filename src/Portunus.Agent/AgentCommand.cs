@@ -28,14 +28,20 @@ namespace Portunus.Agent;
 /// </summary>
 internal static class AgentCommand
 {
-    private static readonly TimeSpan StatusTimeout = TimeSpan.FromSeconds(5);
-
+    /// <summary>How long a command waits for the agent's answer on its push socket.</summary>
+    private static readonly TimeSpan ExchangeTimeout = TimeSpan.FromSeconds(5);
 
     /// <summary>Runs the command <paramref name="arguments"/> name, and answers its exit code.</summary>
-    internal static async Task<int> MainAsync(IReadOnlyList<string> arguments, AgentPaths paths, TextWriter output, TextWriter error)
+    /// <param name="arguments">The command and its arguments.</param>
+    /// <param name="paths">The system paths; a test's own only through the harness and the tests (P-027).</param>
+    /// <param name="input">Standard input, which <c>receive</c> reads the payload from.</param>
+    /// <param name="output">Standard output.</param>
+    /// <param name="error">Standard error.</param>
+    internal static async Task<int> MainAsync(IReadOnlyList<string> arguments, AgentPaths paths, Stream input, TextWriter output, TextWriter error)
     {
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(paths);
+        ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(error);
         try
@@ -43,6 +49,7 @@ internal static class AgentCommand
             return arguments switch
             {
                 ["run", string instance] when Names.IsName(instance) => await RunAsync(instance, paths, error).ConfigureAwait(false),
+                ["receive", string instance] when Names.IsName(instance) => await ReceiveAsync(instance, paths, input, output, error).ConfigureAwait(false),
                 ["status", string instance] when Names.IsName(instance) => await StatusAsync(instance, paths, output, error).ConfigureAwait(false),
                 _ => Refuse(error, new Failure { Code = Codes.Fault }),
             };
@@ -110,7 +117,7 @@ internal static class AgentCommand
         builder.Services.AddSingleton(settings);
         builder.Services.AddSingleton(token);
         builder.Services.AddSingleton(provider => new SetHolder(provider.GetRequiredService<TimeProvider>()));
-        builder.Services.AddSingleton(provider => new AgentServer(settings, provider.GetRequiredService<SetHolder>(), provider.GetRequiredService<TimeProvider>(), provider.GetRequiredService<ILogger<AgentServer>>()));
+        builder.Services.AddSingleton(provider => new AgentServer(settings, provider.GetRequiredService<SetHolder>(), token, provider.GetRequiredService<TimeProvider>(), provider.GetRequiredService<ILogger<AgentServer>>()));
         builder.Services.AddSingleton(provider => new Fetcher(settings, provider.GetRequiredService<TimeProvider>(), provider.GetRequiredService<ILogger<Fetcher>>()));
 
         // The pauses' spread comes from one generator, seeded once (06 PRT-ENG-004).
@@ -155,32 +162,13 @@ internal static class AgentCommand
             return Refuse(error, read.Failure!);
         }
 
-        using CancellationTokenSource bound = new(StatusTimeout);
-        using Socket socket = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
         using PinnedDocument request = RequestFormat.WriteStatus();
-        using PinnedBufferWriter answer = new(Limits.AnswerBytes);
-        try
-        {
-            await socket.ConnectAsync(new UnixDomainSocketEndPoint(Path.Combine(settings.PushDirectory, AgentNames.Socket)), bound.Token).ConfigureAwait(false);
-            await socket.SendAsync(request.Memory, SocketFlags.None, bound.Token).ConfigureAwait(false);
-            socket.Shutdown(SocketShutdown.Send);
-            int count;
-            while ((count = await socket.ReceiveAsync(answer.GetMemory(4096), SocketFlags.None, bound.Token).ConfigureAwait(false)) > 0)
-            {
-                answer.Advance(count);
-            }
-        }
-        catch (Exception exception) when (exception is SocketException or OperationCanceledException)
+        using PinnedDocument? document = await ExchangeAsync(settings, request.Memory).ConfigureAwait(false);
+        if (document is null)
         {
             return Refuse(error, new Failure { Code = Codes.AgentUnreachable });
         }
 
-        if (answer.IsOverBound)
-        {
-            return Refuse(error, new Failure { Code = Codes.AgentUnreachable });
-        }
-
-        using PinnedDocument document = answer.Detach();
         int exit = AnswerFormat.Read(document.Span).Value switch
         {
             WireAnswer.Ready => 0,
@@ -194,6 +182,75 @@ internal static class AgentCommand
 
         await output.WriteLineAsync(Encoding.UTF8.GetString(document.Span)).ConfigureAwait(false);
         return exit;
+    }
+
+    /// <summary>
+    /// Carries a push from <paramref name="input"/> to the agent's push socket in memory (<c>02</c>
+    /// PRT-PSH-003): at most 2 MiB, read into pinned arrays, which are zeroed once sent. It writes
+    /// the agent's answer as one line, and exits 0 where the agent took the push and 1 otherwise.
+    /// </summary>
+    private static async Task<int> ReceiveAsync(string instance, AgentPaths paths, Stream input, TextWriter output, TextWriter error)
+    {
+        Result<AgentSettings> read = Configuration(instance, paths);
+        if (read.Value is not AgentSettings settings)
+        {
+            return Refuse(error, read.Failure!);
+        }
+
+        using PinnedBufferWriter payload = new(Limits.AnswerBytes);
+        int count;
+        while ((count = await input.ReadAsync(payload.GetMemory(Limits.RequestBytes)).ConfigureAwait(false)) > 0)
+        {
+            payload.Advance(count);
+            if (payload.IsOverBound)
+            {
+                return Refuse(error, new Failure { Code = Codes.PushTooLarge });
+            }
+        }
+
+        using PinnedDocument push = payload.Detach();
+        using PinnedDocument? answer = await ExchangeAsync(settings, push.Memory).ConfigureAwait(false);
+        if (answer is null || answer.Length == 0)
+        {
+            return Refuse(error, new Failure { Code = Codes.PushUnreachable });
+        }
+
+        // The answer holds no value: accepted and the number of items, or a refusal's code and names.
+        await output.WriteLineAsync(Encoding.UTF8.GetString(answer.Span)).ConfigureAwait(false);
+        return PushAnswerFormat.Read(answer.Span).Value is PushAnswer.Accepted ? 0 : 1;
+    }
+
+    /// <summary>Sends <paramref name="request"/> on the push socket and answers the agent's answer, or none where it cannot be reached within 5 seconds or answers over 2 MiB.</summary>
+    private static async Task<PinnedDocument?> ExchangeAsync(AgentSettings settings, ReadOnlyMemory<byte> request)
+    {
+        using CancellationTokenSource bound = new(ExchangeTimeout);
+        using Socket socket = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+        using PinnedBufferWriter answer = new(Limits.AnswerBytes);
+        try
+        {
+            await socket.ConnectAsync(new UnixDomainSocketEndPoint(Path.Combine(settings.PushDirectory, AgentNames.Socket)), bound.Token).ConfigureAwait(false);
+            for (int sent = 0; sent < request.Length;)
+            {
+                sent += await socket.SendAsync(request[sent..], SocketFlags.None, bound.Token).ConfigureAwait(false);
+            }
+
+            socket.Shutdown(SocketShutdown.Send);
+            int count;
+            while ((count = await socket.ReceiveAsync(answer.GetMemory(Limits.RequestBytes), SocketFlags.None, bound.Token).ConfigureAwait(false)) > 0)
+            {
+                answer.Advance(count);
+                if (answer.IsOverBound)
+                {
+                    return null;
+                }
+            }
+        }
+        catch (Exception exception) when (exception is SocketException or OperationCanceledException)
+        {
+            return null;
+        }
+
+        return answer.Detach();
     }
 
     /// <summary>Writes <paramref name="failure"/> as one line, <c>{"code":"...","details":{...}}</c>, its details in ordinal order, and answers 1.</summary>

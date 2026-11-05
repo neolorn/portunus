@@ -15,11 +15,12 @@ namespace Portunus.Agent.Serving;
 
 /// <summary>
 /// The agent's sockets (<c>01</c> PRT-AGT-006 to PRT-AGT-008): one per declared process, its
-/// peer checked by user identifier on each connection, and the push socket. A connection
-/// carries one request of at most 4 KiB, received within 5 seconds, and one answer; at most 64
+/// peer checked by user identifier on each connection, and the push socket, which takes a push
+/// (<c>02</c> PRT-PSH-003). A connection carries one request, of at most 4 KiB on a process's
+/// socket and 2 MiB on the push socket, received within 5 seconds, and one answer; at most 64
 /// are served at once.
 /// </summary>
-internal sealed class AgentServer(AgentSettings settings, SetHolder holder, TimeProvider time, ILogger log) : IDisposable
+internal sealed class AgentServer(AgentSettings settings, SetHolder holder, AgentToken token, TimeProvider time, ILogger log) : IDisposable
 {
     private const int MostConnections = 64;
 
@@ -133,24 +134,22 @@ internal sealed class AgentServer(AgentSettings settings, SetHolder holder, Time
         using Socket connection = taken!;
         try
         {
-            if (declaration is not null)
+            uint? peer = PeerUser(connection);
+            string peerName = peer?.ToString(CultureInfo.InvariantCulture) ?? UnknownPeer;
+            if (declaration is not null && peer != declaration.Uid)
             {
                 // A peer whose credentials cannot be read is refused as another user is (P-032).
-                uint? peer = PeerUser(connection);
-                if (peer != declaration.Uid)
-                {
-                    AgentLog.PeerRefused(log, declaration.Process, peer?.ToString(CultureInfo.InvariantCulture) ?? UnknownPeer);
-                    return;
-                }
+                AgentLog.PeerRefused(log, declaration.Process, peerName);
+                return;
             }
 
-            using PinnedDocument? request = await ReceiveAsync(connection).ConfigureAwait(false);
+            using PinnedDocument? request = await ReceiveAsync(connection, declaration is null ? Limits.AnswerBytes : Limits.RequestBytes).ConfigureAwait(false);
             if (request is null)
             {
                 return;
             }
 
-            using PinnedDocument answer = Answer(request.Span, declaration);
+            using PinnedDocument answer = declaration is null ? AnswerOnPushSocket(request.Span, peerName) : Answer(request.Span, declaration);
             for (int sent = 0; sent < answer.Length;)
             {
                 sent += await connection.SendAsync(answer.Memory[sent..], SocketFlags.None).ConfigureAwait(false);
@@ -183,11 +182,11 @@ internal sealed class AgentServer(AgentSettings settings, SetHolder holder, Time
         }
     }
 
-    /// <summary>The request, read until the peer shuts down its sending side; or none where it passes 4 KiB or 5 seconds.</summary>
-    private async Task<PinnedDocument?> ReceiveAsync(Socket connection)
+    /// <summary>The request, read until the peer shuts down its sending side; or none where it passes <paramref name="most"/> bytes or 5 seconds.</summary>
+    private async Task<PinnedDocument?> ReceiveAsync(Socket connection, int most)
     {
         using CancellationTokenSource bound = new(RequestTime, time);
-        using PinnedBufferWriter request = new(Limits.RequestBytes);
+        using PinnedBufferWriter request = new(most);
         try
         {
             while (true)
@@ -211,7 +210,8 @@ internal sealed class AgentServer(AgentSettings settings, SetHolder holder, Time
         }
     }
 
-    private PinnedDocument Answer(ReadOnlySpan<byte> document, Declaration? declaration)
+    /// <summary>Answers a request on a process's socket: a status or a read; a push there is never taken.</summary>
+    private PinnedDocument Answer(ReadOnlySpan<byte> document, Declaration declaration)
     {
         Result<WireRequest> request = RequestFormat.Read(document, Limits.RequestBytes);
         using SetHolder.Lease lease = holder.Acquire();
@@ -220,18 +220,87 @@ internal sealed class AgentServer(AgentSettings settings, SetHolder holder, Time
             case null:
                 return AnswerFormat.WriteFailure(lease.State, request.Failure!);
             case WireRequest.Status:
-                return lease.Set is VaultSet held
-                    ? AnswerFormat.WriteReady(lease.Since, lease.Source, lease.Since, held.Items.Count)
-                    : AnswerFormat.WriteWaiting(lease.Reason, lease.Since);
-            case WireRequest.Read read when declaration is not null:
+                return Status(lease);
+            case WireRequest.Read read:
                 return Read(read.Address, declaration, lease);
             case WireRequest.Push push:
-                // The push's taking is 02 PRT-PSH-003's; a push on a process's socket is never taken.
                 push.Values.Dispose();
                 return AnswerFormat.WriteFailure(lease.State, WireJson.Invalid());
             default:
-                // A read on the push socket.
                 return AnswerFormat.WriteFailure(lease.State, WireJson.Invalid());
+        }
+    }
+
+    /// <summary>Answers a request on the push socket: a status or a push; a read there answers <c>secrets.request.invalid</c>.</summary>
+    private PinnedDocument AnswerOnPushSocket(ReadOnlySpan<byte> document, string peer)
+    {
+        Result<WireRequest> request = RequestFormat.Read(document, Limits.AnswerBytes);
+        if (request.Value is WireRequest.Push push)
+        {
+            return Take(push, peer);
+        }
+
+        using SetHolder.Lease lease = holder.Acquire();
+        return request.Value switch
+        {
+            null => AnswerFormat.WriteFailure(lease.State, request.Failure!),
+            WireRequest.Status => Status(lease),
+            _ => AnswerFormat.WriteFailure(lease.State, WireJson.Invalid()),
+        };
+    }
+
+    private static PinnedDocument Status(SetHolder.Lease lease)
+    {
+        return lease.Set is VaultSet held
+            ? AnswerFormat.WriteReady(lease.Since, lease.Source, lease.LoadedAt, held.Items.Count)
+            : AnswerFormat.WriteWaiting(lease.Reason, lease.Since);
+    }
+
+    /// <summary>
+    /// Takes a push (<c>02</c> PRT-PSH-003) only for the agent's own vault, its title compared
+    /// as <c>03</c> PRT-VLT-001 compares titles, only where its set passes the layout, and only
+    /// into a waiting agent unless it says to replace; once taken, the fetch's attempts end, since
+    /// the holder is ready, and the token is dropped. Each push is logged with the peer, the
+    /// outcome and the number of items, never a value.
+    /// </summary>
+    private PinnedDocument Take(WireRequest.Push push, string peer)
+    {
+        PinnedValues? values = push.Values;
+        try
+        {
+            int items = push.Set.Items.Count;
+            Failure? refusal = null;
+            if (!string.Equals(push.Set.Vault, settings.Options.Vault, StringComparison.OrdinalIgnoreCase))
+            {
+                refusal = new Failure { Code = Codes.PushWrongVault };
+            }
+            else if (LayoutValidator.FirstError(LayoutValidator.Check(push.Set)) is LayoutFinding error)
+            {
+                refusal = new Failure { Code = Codes.PushLayoutInvalid, Details = new Dictionary<string, string> { ["item"] = error.Item ?? string.Empty, ["field"] = error.Field ?? string.Empty } };
+            }
+            else if (holder.TryFill(push.Set, push.Values, SetSource.Push, push.Replace))
+            {
+                values = null;
+            }
+            else
+            {
+                refusal = new Failure { Code = Codes.PushReady };
+            }
+
+            if (refusal is not null)
+            {
+                AgentLog.Push(log, peer, refusal.Code, items);
+                return PushAnswerFormat.WriteRefused(refusal);
+            }
+
+            token.Drop();
+            AgentLog.Push(log, peer, "accepted", items);
+            AgentLog.Ready(log, items, "push");
+            return PushAnswerFormat.WriteAccepted(items);
+        }
+        finally
+        {
+            values?.Dispose();
         }
     }
 

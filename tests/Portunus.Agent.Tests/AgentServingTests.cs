@@ -194,7 +194,7 @@ public sealed class AgentServingTests : IAsyncDisposable
         using StringWriter output = new();
         using StringWriter error = new();
 
-        int exit = await AgentCommand.MainAsync(["status", AgentFiles.Instance], _files.Paths, output, error);
+        int exit = await AgentCommand.MainAsync(["status", AgentFiles.Instance], _files.Paths, Stream.Null, output, error);
 
         Assert.Equal(3, exit);
         Assert.StartsWith("""{"version":1,"state":"waiting","reason":"awaitingpush",""", output.ToString(), StringComparison.Ordinal);
@@ -208,7 +208,7 @@ public sealed class AgentServingTests : IAsyncDisposable
         using StringWriter output = new();
         using StringWriter error = new();
 
-        int exit = await AgentCommand.MainAsync(["status", AgentFiles.Instance], _files.Paths, output, error);
+        int exit = await AgentCommand.MainAsync(["status", AgentFiles.Instance], _files.Paths, Stream.Null, output, error);
 
         Assert.Equal(1, exit);
         Assert.Equal("""{"code":"secrets.agent.unreachable","details":{}}""", error.ToString().Trim());

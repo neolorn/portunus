@@ -26,3 +26,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `portunus-agent`, the key agent: its start's checks, its configuration and declarations, a socket per declared process and the push socket, its states and status, the fetch through `op` with its pauses, and its stop (`01`; `05` PRT-OPS-001, PRT-OPS-002).
 - A connection to a process's socket whose peer's credentials cannot be read, closed without an answer and logged with the peer unknown (`01` PRT-AGT-006, P-032).
 - The token read less one final line ending, `\n` or `\r\n`, and a file holding a line ending alone refused as empty (`01` PRT-AGT-002, PRT-AGT-003, P-031).
+- `portunus-agent receive`, which carries a push from its standard input to the agent's push socket in memory, at most 2 MiB, and writes the agent's answer (`02` PRT-PSH-003).
+- The push's taking: only the agent's own vault, only into a waiting agent unless it says to replace, only a set that passes the layout, and then the fetch's attempts ended and the token dropped (`02` PRT-PSH-003, PRT-PSH-005).

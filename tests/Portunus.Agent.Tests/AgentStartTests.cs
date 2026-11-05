@@ -117,7 +117,7 @@ public sealed class AgentStartTests : IDisposable
         using StringWriter error = new();
 
         ArgumentNullException.ThrowIfNull(command);
-        int exit = await AgentCommand.MainAsync(command.Split(' '), _files.Paths, output, error);
+        int exit = await AgentCommand.MainAsync(command.Split(' '), _files.Paths, Stream.Null, output, error);
 
         Assert.Equal(1, exit);
         Assert.Equal("""{"code":"secrets.fault","details":{}}""", error.ToString().Trim());
@@ -144,7 +144,7 @@ public sealed class AgentStartTests : IDisposable
     {
         using StringWriter output = new();
         using StringWriter error = new();
-        int exit = await AgentCommand.MainAsync(["run", AgentFiles.Instance], _files.Paths, output, error);
+        int exit = await AgentCommand.MainAsync(["run", AgentFiles.Instance], _files.Paths, Stream.Null, output, error);
         string[] lines = error.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries);
         Assert.Single(lines);
         Assert.Empty(output.ToString());
