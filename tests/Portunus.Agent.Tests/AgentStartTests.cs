@@ -82,6 +82,31 @@ public sealed class AgentStartTests : IDisposable
         AssertRefusal(line, "secrets.agent.declarationinvalid", ("member", "Secrets"), ("process", "web"));
     }
 
+    [Fact]
+    public async Task PRT_AGT_002_AC1_OpThatDoesNotRunStopsTheStartWithOpVersionFoundEmpty()
+    {
+        string missing = Path.Combine(_files.Folder, "missing");
+        _files.WriteConfiguration(("Source", "\"vault\""), ("OpPath", $"\"{missing}\""), ("TokenFile", $"\"{missing}\""));
+
+        (int exit, JsonElement line) = await RunAsync();
+
+        Assert.Equal(1, exit);
+        AssertRefusal(line, "secrets.agent.opversion", ("found", string.Empty));
+    }
+
+    [Fact]
+    public async Task PRT_AGT_002_AC1_OpAnsweringNoVersionStopsTheStartHavingRunOnlyOpVersion()
+    {
+        FakeOp op = FakeOp.AnsweringNothing(_files);
+        string missing = Path.Combine(_files.Folder, "missing");
+        _files.WriteConfiguration(("Source", "\"vault\""), ("OpPath", $"\"{op.Launcher}\""), ("TokenFile", $"\"{missing}\""));
+
+        (int exit, JsonElement line) = await RunAsync();
+
+        Assert.Equal(1, exit);
+        AssertRefusal(line, "secrets.agent.opversion", ("found", string.Empty));
+        Assert.Equal(["--version"], Assert.Single(op.Calls()));
+    }
     [Theory]
     [InlineData("go")]
     [InlineData("run")]

@@ -8,4 +8,10 @@
     <ProjectReference Include="..\..\src\Portunus.Core\Portunus.Core.csproj" />
   </ItemGroup>
 
+  <!-- The fakes act by the name they are started under, so the executable is copied as op and ssh beside its assembly (06 PRT-ENG-001). -->
+  <Target Name="CopyAsTheirNames" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetDir)$(TargetName)$(_NativeExecutableExtension)" DestinationFiles="$(TargetDir)op$(_NativeExecutableExtension)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName)$(_NativeExecutableExtension)" DestinationFiles="$(TargetDir)ssh$(_NativeExecutableExtension)" SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>

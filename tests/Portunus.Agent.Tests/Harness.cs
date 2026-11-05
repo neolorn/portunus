@@ -20,8 +20,11 @@ internal static class Harness
 
     internal const uint WebGroup = 4242;
 
+    /// <summary>The repository's root.</summary>
+    internal static string Repository { get; } = RepositoryRoot();
+
     /// <summary>The folder the harness is built in.</summary>
-    internal static string Folder { get; } = Path.Combine(RepositoryRoot(), "tests", "Portunus.Agent.Harness", "bin", "Release", "net10.0");
+    internal static string Folder { get; } = Path.Combine(Repository, "tests", "Portunus.Agent.Harness", "bin", "Release", "net10.0");
 
     /// <summary>Starts the harness with <paramref name="arguments"/>, its output and error redirected.</summary>
     internal static Process Start(string harness, params string[] arguments)
