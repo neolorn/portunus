@@ -84,8 +84,8 @@ Every test below is in `tests/Portunus.Repository.Tests`, written before the cod
 
 ## Awaiting the pipeline's run
 
-- `06` PRT-ENG-012 criterion 1, each gate running on the pull request and a failing one blocking the merge: needs `main` pushed, its protection requiring `gates`, and the pull request. Not run (Open question 1).
-- `06` PRT-ENG-012 criterion 2, each script giving locally the result the pipeline gives: `run-gates.ps1` passed every gate locally on Windows; the pipeline's run on `ubuntu-24.04` has not happened.
+- `06` PRT-ENG-012 criterion 1, each gate running on the pull request and a failing one blocking the merge: the `gates` job runs every gate on pull request #1, and the protection of `main` requires its `gates` check. Its result on this commit is the gate of record, which the message naming the pull request gives.
+- `06` PRT-ENG-012 criterion 2, each script giving locally the result the pipeline gives: `run-gates.ps1` passed every gate locally on Windows on `d71500b`, and the pipeline's `gates` run 41951617989 on `ubuntu-24.04` passed every gate on the same commit. Its result on this commit is in the message naming the pull request.
 
 ## Analyser suppressions
 
@@ -114,12 +114,12 @@ None: phase 0 holds no code that handles a value or the token.
 
 ## Open questions
 
-1. **The push of `main` waits on the owner** (not a question of the specification). `git push origin main` is refused by the machine's permission settings; it was not worked around, and the owner pushes `main` himself. Settings set: dependency vulnerability alerting on, secret scanning on, push protection on, squash merges off. Not set: the default branch, which GitHub refuses to set on an empty repository (the API reports it as `main`, which the first push makes the default), and the protection of `main`, which comes after its push. Waiting on it: the default branch taking effect, the protection of `main` (the `gates` check required, force pushes and deletion refused), the push of `phase-00`, the pull request into `main`, and the pipeline's `gates` run. `phase-00` is not pushed before `main`, since the first branch pushed to an empty repository becomes its default. The full-history secret scan passed on the docs commit, then `df22b6c`, now `bbeb746` (Open question 2).
+1. **The push of `main` waits on the owner** (not a question of the specification). `git push origin main` is refused by the machine's permission settings; it was not worked around, and the owner pushes `main` himself. Settings set: dependency vulnerability alerting on, secret scanning on, push protection on, squash merges off. Not set: the default branch, which GitHub refuses to set on an empty repository (the API reports it as `main`, which the first push makes the default), and the protection of `main`, which comes after its push. **Settled by the owner's push of `main` at `bbeb746`**, now the default branch. Then the protection of `main` was set (the `gates` check required, force pushes and deletion refused, administrators not included), `phase-00` was pushed after the full-history secret scan passed, and pull request #1 was opened into `main`. Nothing was parked.
 2. **Tier 2: the docs commit's description is not in the imperative.** Item: `06` PRT-ENG-011. The docs commit `df22b6c` reads "docs: the specification, its decisions and its plan"; the rule asks for a description in the imperative (checked in review), and the commit-message gate, which checks the form alone, passes it. Once pushed it is never rewritten. Readings: (a) it stands as written; (b) the lead rewords the unpushed commit before the push of `main` (for example "docs: specify the secrets library"), with the same tree, and `phase-00` is rebased onto it. Smallest fix for (a): none; for (b): the reworded commit, and the rebase, which changes nothing else. Nothing is parked. **Answered by the lead's message: reading (b).** The lead reworded the unpushed docs commit as `bbeb746` "docs: add the specification, its decisions and its plan", with the tree of `df22b6c`, and `phase-00` was rebased onto it. The commit-message gate and the full-history secret scan pass after the rebase.
 
 ## Checks
 
-- The commit: the report's own commit, the head of `phase-00`, on `3cf4d40`, itself on `main` at `bbeb746`.
+- The commit: the report's own commit, the head of `phase-00`, on `d71500b` (the report's first commit), on `3cf4d40`, itself on `main` at `bbeb746`.
 - Fast checks on every commit: the build of `Portunus.sln` in Release with warnings as errors, the analysers, `dotnet format Portunus.sln --verify-no-changes`, and the unit tests: green.
 - Before the push: every unit test, the commit-message gate over `main..HEAD` and over the whole history, the full-history secret scan, and every integration and contract test: green. `run-gates.ps1 -Base main -Head HEAD` on the report's own commit: every gate passed (build, commit messages, dependency allow-list, format, project references, public surface, restore, secret scan, test names, tests).
-- The gate of record, the pipeline's `gates` run on the report's commit: not run (Open question 1).
+- The gate of record: the pipeline's `gates` run on this commit, on pull request #1, whose identifier and result the message naming the pull request gives. The run on `d71500b`, 41951617989, passed every gate.
