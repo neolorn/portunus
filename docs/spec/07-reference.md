@@ -152,7 +152,8 @@ the start (`05` PRT-OPS-001).
 
 ## 6. Wire formats
 
-Protocol version 1. Members in the order shown; `<b64>` is a value in base64; an instant
+Protocol version 1. Members in the order shown; `<b64>` is a value in base64url (RFC 4648
+section 5, unpadded, P-023); an instant
 is RFC 3339 with an offset of zero (`06` PRT-ENG-006).
 
 | Format | Form |

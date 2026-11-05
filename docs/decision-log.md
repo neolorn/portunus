@@ -557,3 +557,56 @@ taken from the siblings' release assets into `vendor/` with their hashes.
 
 *Rejected for the recommendation:* a minimum version (a sibling's release candidate may
 change its seam, and the host would learn it at start).
+
+## P-023 — The wire formats carry values that never need escaping
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-ENG-005, PRT-ENG-006
+
+**TL;DR.** In the library's own wire formats a value is written in base64url (RFC 4648
+section 5, unpadded), which JSON never escapes. The library writes those bytes, and reads
+them back, itself, through spans over its own pinned arrays, so no helper of the runtime
+holds a copy of a value that the library cannot zero. Found at phase 1: the chapters had a
+value read through `Utf8JsonReader.CopyString` or `TryGetBytesFromBase64` and written
+through `Utf8JsonWriter.WriteBase64String`, and nothing in the platform's documentation
+says those helpers make no copy of their own while they unescape or encode.
+
+- **Writing.** The library encodes a value with `Base64Url.EncodeToUtf8` into its pinned
+  buffer and writes the result with `Utf8JsonWriter.WriteStringValue(ReadOnlySpan<byte>)`
+  into a writer over a pinned array of the bound's size. A base64url text holds no
+  character the writer escapes, so the writer copies it straight into its output.
+- **Reading.** A value's string is refused where `Utf8JsonReader.ValueIsEscaped` is true,
+  as `secrets.request.malformed`; otherwise the library decodes `ValueSpan` with
+  `Base64Url.DecodeFromUtf8` straight into its pinned array.
+- **What `op` prints** is not the library's format. A field's text there may be escaped
+  (a password holding a quotation mark), so it is read with `CopyString` into a pinned
+  array, and a key's base64 field (`03` PRT-VLT-003) is decoded from that array. What the
+  runtime may hold while it unescapes is named in the threat model beside what `op`'s own
+  process and the kernel's pipe hold: copies outside the library's reach, gone when that
+  memory is reused, and none of them on disk (PRT-THR-002).
+- **What stays.** The vault's fields keep base64 (RFC 4648 section 4, padded), the form an
+  owner pastes; only the library's own formats change.
+
+*Rejected:*
+- **Trusting the helpers unexamined:** the spec would promise what it cannot show.
+- **A hand-written JSON reader:** a second parser of the same format, for one member kind.
+
+**Propagated to:**
+- `06` PRT-ENG-005 (the reading and writing of a value) and PRT-ENG-006 (base64url);
+- `07` section 6 (`<b64>` read as base64url);
+- `01` PRT-AGT-008 (the read's answer in base64url);
+- `08` PRT-THR-002 (the copies outside the library's reach).
+
+## P-024 — A live and a retired version of one number, and a secret only retired
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-VLT-004, PRT-VLT-005
+
+**TL;DR.** A live version and a retired version of the same number in one item
+(`keys.2` beside `keys.2.retired`) is `secrets.layout.fieldduplicate`, naming the later
+label, since a number names one version. A secret holding only retired versions is
+allowed: no process reads it any more, and it stays for a backup's restore. A declaration
+naming such a secret finds it unknown, as for a secret the set does not hold. Found at
+phase 1: no rule covered either case.
+
+**Propagated to:**
+- `03` PRT-VLT-005 (both cases and a criterion).
+

@@ -65,6 +65,10 @@ inside the running server:
   declared addresses, not to less.
 - **The processes themselves** keep what they read in their own memory, as the sibling
   libraries' own rules say; this library cannot clear it.
+- **Copies outside the library's reach:** what `op`'s own process holds, what the
+  kernel holds in a pipe or a socket's buffer, and what the runtime may hold while it
+  unescapes a field's text from `op`'s output. None is on disk, and each is gone when
+  that memory is reused (P-023).
 - **The owner's computer**, while the 1Password app is unlocked, is open to a process
   with administrator rights on it, as 1Password states for its CLI's integration; a push
   is as safe as that computer.

@@ -114,12 +114,17 @@ retired, which a backup taken under it still needs, is relabelled `<name>.<n>.re
 it stays in the item for a restore, is checked as a version is, and is never delivered
 nor counted among the live versions. The current version is never retired. A version is
 deleted only once no backup holds data under it; when is the owner's (`05` PRT-OPS-003).
+A live and a retired version of the same number is `secrets.layout.fieldduplicate`,
+naming the later label; a secret holding only retired versions is allowed, delivers
+nothing, and a declaration naming it finds it unknown (P-024).
 
-*Source: P-012, P-019*
+*Source: P-012, P-019, P-024*
 
 **Acceptance criteria**
 1. A read of a set holding `.1.retired`, `.2` and `.current` naming 2 answers version 2
    alone; `.current` naming a retired version is an error.
+2. `.2` beside `.2.retired` is `fieldduplicate`; a secret holding only `.1.retired`
+   passes the check and is not delivered (P-024).
 
 ---
 

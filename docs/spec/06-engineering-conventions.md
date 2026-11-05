@@ -194,15 +194,18 @@ pinned byte array, zeroed once used, and SHALL never become a `string` but where
 the library does not own demands one.
 
 **Values (P-002).** Arrays come from `GC.AllocateArray<byte>(length, pinned: true)` and
-are zeroed with `CryptographicOperations.ZeroMemory` in a `finally`; a value's bytes are
-read from JSON with `Utf8JsonReader.CopyString` or `TryGetBytesFromBase64` and written
-with `Utf8JsonWriter.WriteBase64String`, into a writer over a pinned array of the bound's
-size (`07` section 5); a child process's output is read from its base stream. The only
+are zeroed with `CryptographicOperations.ZeroMemory` in a `finally`. In the library's
+own formats a value is base64url, encoded with `Base64Url.EncodeToUtf8` into a pinned
+buffer and written with `Utf8JsonWriter.WriteStringValue` into a writer over a pinned
+array of the bound's size (`07` section 5), and read by refusing an escaped string and
+decoding `ValueSpan` with `Base64Url.DecodeFromUtf8` into a pinned array (P-023); a
+field's text in `op`'s output is read with `Utf8JsonReader.CopyString` into a pinned
+array; a child process's output is read from its base stream. The only
 `string` a secret becomes is the token in `op`'s environment (`01` PRT-AGT-003), a
 `ProcessStartInfo` demanding one, and a value an adapter hands a sibling as the sibling's
 type demands. `Secret` hands its caller arrays of its own; zeroing those is the caller's.
 
-*Source: P-002*
+*Source: P-002, P-023*
 
 **Acceptance criteria**
 1. No path of the agent, the client, the tool or an adapter makes a `string` of a value
@@ -218,7 +221,8 @@ its protocol version.
 
 **Values (P-016).** UTF-8 JSON without indentation, members in camel case and in the order
 of `07` section 6, a member that is none left out, an enumeration member by its spelling
-(`07` section 2), a value in base64 (RFC 4648 section 4), an instant in RFC 3339 with an
+(`07` section 2), a value in base64url (RFC 4648 section 5, unpadded; P-023),
+an instant in RFC 3339 with an
 offset of zero; a reader ignores a member it does not know and refuses a document over
 its bound. The formats are internal to `Portunus.Core` and shared by the agent, the
 client, the tool and the fakes.
