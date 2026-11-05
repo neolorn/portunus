@@ -48,8 +48,13 @@ internal static class PublicMemberTable
             "Portunus.Core.ISecretClient.ReadAsync(Portunus.Core.SecretAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Portunus.Core.Result<Portunus.Core.Secret!>!>",
             "Portunus.Core.ISecretClient.StatusAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Portunus.Core.Result<Portunus.Core.AgentStatus!>!>",
         ],
+        [Packages.Client] =
+        [
+            "static Portunus.SecretsServiceCollectionExtensions.AddPortunus(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!",
+        ],
         [Packages.Testing] =
         [
+            "static Portunus.Testing.SecretsTestingServiceCollectionExtensions.AddPortunusTesting(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Portunus.Testing.FixedSecretClient!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!",
             "Portunus.Testing.FixedSecretClient.FixedSecretClient() -> void",
             "Portunus.Testing.FixedSecretClient.Set(Portunus.Core.SecretAddress address, Portunus.Core.Secret! secret) -> void",
             "Portunus.Testing.FixedSecretClient.Remove(Portunus.Core.SecretAddress address) -> void",

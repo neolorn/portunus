@@ -85,19 +85,16 @@ public sealed class AssemblyContractTests
         Assert.Empty(NamingRules.SpellingViolations(AssemblySurface.Enumerations(Path.Combine(AppContext.BaseDirectory, assembly))));
     }
 
-    [Fact]
-    public void PRT_LIB_002_AC2_CoreDeclaresEveryTypeAndMemberOfItsTable()
+    [Theory]
+    [InlineData(Packages.Core)]
+    [InlineData(Packages.Client)]
+    [InlineData(Packages.Testing)]
+    public void PRT_LIB_002_AC2_PartDeclaresEveryTypeAndMemberOfItsTable(string part)
     {
-        string assembly = Path.Combine(AppContext.BaseDirectory, Packages.Core + ".dll");
+        string assembly = Path.Combine(AppContext.BaseDirectory, part + ".dll");
 
-        Assert.Empty(PublicTypeTable.MissingTypes(Packages.Core, AssemblySurface.PublicTypes(assembly)));
-        Assert.Empty(PublicMemberTable.Violations(Packages.Core, RepositoryRoot.Combine("src", Packages.Core)));
-    }
-
-    [Fact]
-    public void PRT_LIB_002_AC2_TestingDeclaresTheMembersOfTheFixedClient()
-    {
-        Assert.Empty(PublicMemberTable.Violations(Packages.Testing, RepositoryRoot.Combine("src", Packages.Testing)));
+        Assert.Empty(PublicTypeTable.MissingTypes(part, AssemblySurface.PublicTypes(assembly)));
+        Assert.Empty(PublicMemberTable.Violations(part, RepositoryRoot.Combine("src", part)));
     }
 
     [Theory]
