@@ -35,21 +35,35 @@ Every test below was written before the code it proves.
 **`08` PRT-THR-001** criterion 1, its reading (P-041): every requirement the table of PRT-THR-001 names, PRT-THR-001 itself and the six of the list kept beside the test left out, each with its reason (`ThreatModelRules.Excluded`: PRT-ENG-012, PRT-OPS-005, PRT-THR-003, PRT-OPS-002, PRT-PSH-001, PRT-ENG-005); the requirements the tests of `tests/` are named after, comments and string literals blanked; and each named requirement no test carries.
 - ThreatModelRuleTests (unit, a fixture table): Named_FixtureTable_ReadsEachRequirementItsTableNamesOnceInOrder, Named_RequirementOnTheList_IsLeftOut, Named_RequirementAddedToTheTable_IsRead, Named_ModelWithoutTheTable_Throws, Excluded_List_HoldsTheSixRequirementsOfP041EachWithItsReason, Tested_FixtureTests_ReadsTheRequirementOfEachTestNameAndNoneOfALiteralOrAComment, Untested_RequirementWithoutATest_IsFoundAndOneWithATestIsAccepted
 
-`build/gates/built-items.txt` gains PRT-ENG-011 AC3, PRT-LIB-007 AC1 and PRT-LIB-007 AC2.
+Part 2, after the owner allowed the download of his own repositories' release assets:
+
+**`06` PRT-ENG-001** and **PRT-ENG-009**, `vendor/` for Themis: `Themis.Core.1.0.0-rc.2.nupkg`, taken from `neolorn/themis`'s `v1.0.0-rc.2` release (commit `2636a3d`), 51337 bytes, its SHA-256 `67c3b374861ee3e719c0df82f65ba5434a5f26eaf391666aa7d77d6c486afce9` checked against the asset's published digest before it entered `vendor/`, and listed in `vendor/SHA256SUMS`; it depends on no other package. `Directory.Packages.props` pins it at `[1.0.0-rc.2]`.
+- The phase 5 tests of RepositoryLayoutTests over `vendor/`, now with the third file
+
+**`04` PRT-LIB-006**, Themis, and **`00` PRT-OVR-002** for Themis: `src/Portunus.Themis`, against `Themis.Core` 1.0.0-rc.2 as released. `AddPortunusThemisSecrets` calls `AddPortunus` and registers Themis's `ISecretSource` as a singleton, once; its keys `Portunus:Themis:Item` (default `Themis`) and `Portunus:Themis:Items:<name>` are read and checked as Hermes's are (`ThemisConfiguration`). `connection`, the table's one name, and any name it does not list (P-037, logged once at Information) pass as their UTF-8 bytes, every live version in ascending order; any failure answers none, a denied address logged at Warning with the name first (`ThemisSecretSource`, `ThemisLog`). Each adapter is held to its sibling's released package: its lockfile resolving it directly at the version of `07` section 7, and `vendor/` holding that release's file (`PackageRules.SiblingBuildViolations`).
+- ThemisSecretSourceTests (unit, a fixed client): PRT_LIB_006_AC1_ConnectionAnswersItsValueAsVersionOne, ConnectionOfTwoVersionsAnswersBothInAscendingOrder, DeniedAddressAnswersNoneAndLogsTheNameFirst, SecretTheAgentDoesNotHoldAnswersNone, ItemOfTheNameIsReadWhereItsKeyIsSet; PRT_OPS_001_AC1_ThemisItemHasItsDefaultWhenAbsent, ThemisKeyOutsideItsRuleStopsTheStartNamingIt; ReadAsync_NameTheTableDoesNotList_AnswersItsTextAndLogsItOnce, ReadAsync_NameOutsideTheSecretNamesRule_AnswersNone
+- ThemisSecretsServiceCollectionExtensionsTests (unit, a real host, P-039): PRT_LIB_006_AC4_HostBuiltWithTheAdaptersCallAloneResolvesItsSourceOnce
+- SiblingPackageTests (unit): PRT_OVR_002_AC1_EachAdapterBuildsAgainstItsSiblingsReleasedPackage, AdapterResolvingAnotherVersionOfItsSiblingIsFound, AdapterTakingItsSiblingOnlyThroughAnotherPackageIsFound, SiblingsReleaseMissingFromVendorIsFound; SiblingBuildViolations_EachAdapterAtItsPinnedRelease_AreNone
+- The phase 0 tests of ProjectReferenceTests, GrantTests, RepositoryLayoutTests, PackTests and AssemblyContractTests, now over `Portunus.Themis`
+
+**`04` PRT-LIB-008** criterion 1: a host with `AddPortunusThemisSecrets` and `AddPortunusTesting` sets `Themis/connection`, and the `Themis.Core.ISecretSource` it resolves answers it for `connection`, in either order of the two calls.
+- ThemisSecretsServiceCollectionExtensionsTests (unit, a real host): PRT_LIB_008_AC1_HostTestWithTheFixedClientSetsThemisConnectionInEitherOrder
+
+**`06` PRT-ENG-011**, the release commit: `chore: release 1.0.0-rc.1`, changing no file but its own: each `PublicAPI.Shipped.txt` its entries and those of the `PublicAPI.Unshipped.txt` beside it, none marked `*REMOVED*`, in ordinal order after `#nullable enable`; each `PublicAPI.Unshipped.txt` `#nullable enable` alone; `build/gates/release-baseline.json` the release's own set as the release gate reads it at that commit; `CHANGELOG.md` with the `Unreleased` entries under `## [1.0.0-rc.1] - 2026-11-05` below an empty `## [Unreleased]`. `RELEASE-NOTES.md`'s section `## 1.0.0-rc.1` was written before it, in `docs:` commits of this pull request, the Themis adapter named in it. Only this report's `docs:` commit follows it. The commit-message gate and the release gate pass on it.
+
+`build/gates/built-items.txt` gains PRT-ENG-011 AC3, PRT-LIB-007 AC1 and PRT-LIB-007 AC2; in part 2, PRT-LIB-006 AC1 and AC4, PRT-LIB-008 AC1 and PRT-OVR-002 AC1, which the Themis adapter completes.
 
 ## Items not built
-
-
-Waiting on `Themis.Core.1.0.0-rc.2.nupkg`, the owner's download:
-- `src/Portunus.Themis` and its tests, as phase 5 named them; the Themis line of `RELEASE-NOTES.md`'s packages and siblings' versions.
 
 Waiting on the fake `op`'s recordings:
 - `08` PRT-THR-001 criterion 1, its test over this repository. Its reading is built and proven over a fixture table; over this repository it finds `01` PRT-AGT-003, PRT-AGT-004 and `02` PRT-PSH-002 with no test carrying their identifiers until the recorded scenarios come, so the criterion's test cannot pass, and is not committed, before them.
 
-Waiting on the lead's message after the review:
-- The release commit `chore: release 1.0.0-rc.1` and the tag `v1.0.0-rc.1`.
+Waiting on the merge of this pull request:
+- The tag `v1.0.0-rc.1`, which the lead pushes on the release commit once the merge brings it into `main`, and the release job's run on it.
 
 Still parked from phase 4, waiting on the owner: his check by hand on Windows.
+
+The release commit does not wait on what the owner holds: PRT-THR-001 criterion 1's own test, the fake `op`'s recordings and the check by hand on Windows stay parked for him, and a later release candidate carries what they bring.
 
 ## Criteria checked without a test
 
@@ -96,7 +110,8 @@ Still parked from phase 4, waiting on the owner: his check by hand on Windows.
 
 ## Checks
 
-- The commit: the report's own commit, the head of `phase-06`, on `09567d7`; the branch stands on `61b75ce` of `main`, with the lead's `06866d0` and `a01498d`.
+- The commit: the report's own commit, the head of `phase-06`, on `b5452fc`, the release commit; part 1 was merged as `9b99892`, and part 2 stands on `c3bfb7a`.
 - Fast checks on every commit: built in Release with warnings as errors and the analysers; `dotnet format --verify-no-changes`; the unit tests of the projects each commit changes; green.
 - Before the push: every unit test, the integration tests, the `linux` kind in the SDK's container, the agent's publish, the commit-message gate and the full-history secret scan, by `run-gates.ps1 -Base main -Head HEAD`.
 - The gate of record: the pipeline's `gates` run on the report's own commit, whose identifier and result the message naming the pull request gives.
+- Part 2's lockfiles of `Portunus.Themis`, its tests and the repository's tests are restored from a package folder of their own under `tmp/`: this machine's NuGet cache held a `Themis.Core` 1.0.0-rc.2 of another source, whose content hash is not the release's, and the container's run of the `linux` tests refused it (NU1403). The lockfiles now carry the hash of `vendor/`'s file, which matches the release's published digest.
