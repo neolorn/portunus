@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Portunus.Core.Tests" />
+    <InternalsVisibleTo Include="Portunus" />
+    <InternalsVisibleTo Include="Portunus.Testing" />
   </ItemGroup>
 
 </Project>
