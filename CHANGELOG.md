@@ -24,3 +24,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AddPortunus`, the one call a host registers the client with: the client made as the host starts, and the health check `portunus` (`04` PRT-LIB-003, `05` PRT-OPS-004).
 - `AddPortunusTesting`, which puts one `FixedSecretClient` in place of the client, in either order with `AddPortunus` (`04` PRT-LIB-008).
 - `portunus-agent`, the key agent: its start's checks, its configuration and declarations, a socket per declared process and the push socket, its states and status, the fetch through `op` with its pauses, and its stop (`01`; `05` PRT-OPS-001, PRT-OPS-002).
+- A connection to a process's socket whose peer's credentials cannot be read, closed without an answer and logged with the peer unknown (`01` PRT-AGT-006, P-032).

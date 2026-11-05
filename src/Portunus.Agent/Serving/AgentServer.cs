@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
@@ -25,6 +26,8 @@ internal sealed class AgentServer(AgentSettings settings, SetHolder holder, Time
     private const int SolSocket = 1;
 
     private const int PeerCredentials = 17;
+
+    private const string UnknownPeer = "unknown";
 
     private static readonly TimeSpan RequestTime = TimeSpan.FromSeconds(5);
 
@@ -130,10 +133,15 @@ internal sealed class AgentServer(AgentSettings settings, SetHolder holder, Time
         using Socket connection = taken!;
         try
         {
-            if (declaration is not null && PeerUser(connection) is uint peer && peer != declaration.Uid)
+            if (declaration is not null)
             {
-                AgentLog.PeerRefused(log, declaration.Process, peer);
-                return;
+                // A peer whose credentials cannot be read is refused as another user is (P-032).
+                uint? peer = PeerUser(connection);
+                if (peer != declaration.Uid)
+                {
+                    AgentLog.PeerRefused(log, declaration.Process, peer?.ToString(CultureInfo.InvariantCulture) ?? UnknownPeer);
+                    return;
+                }
             }
 
             using PinnedDocument? request = await ReceiveAsync(connection).ConfigureAwait(false);
@@ -161,11 +169,18 @@ internal sealed class AgentServer(AgentSettings settings, SetHolder holder, Time
         }
     }
 
-    /// <summary>The peer's user identifier, from <c>SO_PEERCRED</c>.</summary>
+    /// <summary>The peer's user identifier, from <c>SO_PEERCRED</c>; none where it cannot be read.</summary>
     private static uint? PeerUser(Socket connection)
     {
         Span<byte> credentials = stackalloc byte[12];
-        return connection.GetRawSocketOption(SolSocket, PeerCredentials, credentials) == 12 ? BitConverter.ToUInt32(credentials[4..]) : null;
+        try
+        {
+            return connection.GetRawSocketOption(SolSocket, PeerCredentials, credentials) == 12 ? BitConverter.ToUInt32(credentials[4..]) : null;
+        }
+        catch (SocketException)
+        {
+            return null;
+        }
     }
 
     /// <summary>The request, read until the peer shuts down its sending side; or none where it passes 4 KiB or 5 seconds.</summary>
