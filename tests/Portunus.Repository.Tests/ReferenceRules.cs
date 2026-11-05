@@ -8,7 +8,8 @@ using System.Xml.Linq;
 namespace Portunus.Repository.Tests;
 
 /// <summary>
-/// What each project may reference (<c>04</c> PRT-LIB-001).
+/// What each project may reference (<c>04</c> PRT-LIB-001) and the grants of
+/// <c>InternalsVisibleTo</c> (<c>06</c> PRT-ENG-001).
 /// </summary>
 internal static class ReferenceRules
 {
@@ -159,6 +160,64 @@ internal static class ReferenceRules
     private static string Target(XElement item)
     {
         return item.Attribute("Include")?.Value ?? item.Attribute("Update")?.Value ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Answers each grant of <c>InternalsVisibleTo</c> outside <c>06</c> PRT-ENG-001's rule that
+    /// the built assembly of a project of the repository at <paramref name="root"/> carries,
+    /// whatever form declared it: an item, an attribute item or an attribute in a source file.
+    /// </summary>
+    internal static IReadOnlyList<string> GrantViolations(string root)
+    {
+        List<string> violations = [];
+        foreach (ProjectFile project in ProjectFile.ReadAll(root))
+        {
+            string assembly = Path.Combine(project.Folder, "bin", "Release", "net10.0", project.Name + ".dll");
+            if (!File.Exists(assembly))
+            {
+                violations.Add($"{project.RelativePath} has no built assembly at bin/Release/net10.0/, so its grants cannot be read.");
+                continue;
+            }
+
+            violations.AddRange(GrantViolations(project.RelativePath, project.Name, AssemblySurface.Grants(assembly)));
+        }
+
+        return violations;
+    }
+
+    /// <summary>Answers each of <paramref name="grantees"/> the project at <paramref name="relativePath"/> may not grant its internals to.</summary>
+    internal static IEnumerable<string> GrantViolations(string relativePath, string name, IEnumerable<string> grantees)
+    {
+        return grantees.Where(grantee => !IsAllowedGrant(relativePath, name, grantee))
+            .Select(grantee => $"{relativePath} grants its internals to {grantee}, which PRT-ENG-001 does not allow.");
+    }
+
+    /// <summary>
+    /// A source project grants its own test project; <c>Portunus.Core</c> grants <c>Portunus</c>,
+    /// <c>Portunus.Agent</c>, <c>Portunus.Cli</c> and <c>Portunus.Testing</c>, which share its
+    /// layout validator, its address and name rules and its wire formats; and <c>Portunus</c>
+    /// grants <c>Portunus.Testing</c>, which removes the client's registration in favour of the
+    /// fixed one.
+    /// </summary>
+    private static bool IsAllowedGrant(string relativePath, string name, string grantee)
+    {
+        if (!relativePath.StartsWith("src/", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (string.Equals(grantee, Packages.TestProject(name), StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        IReadOnlyList<string> allowed = name switch
+        {
+            Packages.Core => [Packages.Client, Packages.Agent, Packages.Cli, Packages.Testing],
+            Packages.Client => [Packages.Testing],
+            _ => [],
+        };
+        return allowed.Contains(grantee, StringComparer.Ordinal);
     }
 
     private static IReadOnlyList<string> AllowedTestProjects(string testProject)
