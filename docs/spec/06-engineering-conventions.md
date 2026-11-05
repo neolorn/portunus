@@ -50,9 +50,10 @@ file's SHA-256; `nuget.config` maps the identifiers `Janus.*`, `Hermes.Core` and
 `Themis.Core` to `vendor/` alone and every other identifier to nuget.org alone, by
 `packageSourceMapping`.
 
-The sample host is a worker service with an invented domain naming no real product or
-company (checked in review): it registers `AddPortunus` and `AddPortunusThemisSecrets`,
-reads one secret of its own and Themis's `connection` through them at its start, and logs
+The sample host is a worker service on the ASP.NET Core shared framework, through the Web
+SDK, with an invented domain naming no real product or company (checked in review): it
+registers `AddPortunus` and `AddPortunusHermesSecrets` (P-040), reads one secret of its
+own and Hermes's `connection` through them at its start, and logs
 the versions it holds, never a value; its tests run it through `Portunus.Testing`. It
 runs in the gate (PRT-ENG-012) from packages packed from the same commit into
 `artifacts/packages/`, which `.gitignore` lists, at a version the gate passes it; it alone

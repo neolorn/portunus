@@ -948,3 +948,46 @@ adapter's call alone. Found at phase 5.
 
 **Propagated to:**
 - `06` PRT-ENG-009 (the hosting row).
+
+## P-040 — The sample host is a web worker with the Hermes adapter
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-LIB-001, PRT-ENG-001
+
+**TL;DR.** The sample host takes the ASP.NET Core shared framework through the Web SDK,
+as the siblings' sample hosts do, and runs as a generic host with a hosted service; it
+registers `AddPortunus` and `AddPortunusHermesSecrets`, reading one secret of its own
+through the client and Hermes's `connection` through Hermes's `ISecretSource`. Found at
+phase 6: none of the packed packages brings the generic host, and the chapter named the
+Themis adapter, whose package is not yet vendored.
+
+- **The framework, not a package.** Every sibling's host runs on the shared framework, so
+  the sample host shows the adapters where they are used, and adds no row to the
+  allow-list.
+- **Hermes, not Themis.** The Hermes adapter is the lightest built one and needs nothing
+  vendored that is not already there; the sample host shows one adapter, and which one is
+  no part of its point. The Janus adapter's closure would make the sample host carry
+  Janus's dependencies for nothing it shows.
+
+*Rejected:*
+- **`Microsoft.Extensions.Hosting` as a package:** a row in the allow-list for a host the
+  siblings run on the framework.
+- **Waiting for the Themis adapter:** holds phase 6 on a file the sample host does not
+  need.
+
+**Propagated to:**
+- `04` PRT-LIB-001 (the sample host's row); `06` PRT-ENG-001 (the sample host).
+
+## P-041 — Which controls the threat test reads
+
+**Date:** 2026-11-05 · **Status:** accepted · **Amends:** PRT-THR-001
+
+**TL;DR.** PRT-THR-001 criterion 1's test reads every requirement its table names, and
+finds a test carrying each identifier, save those on a list kept beside the test, each
+with its reason: PRT-ENG-012 (the pipeline's own run), PRT-OPS-005 (checked by the
+integration tests' run), PRT-THR-003 (checked in review), PRT-OPS-002 and PRT-PSH-001
+(no criteria of their own), and PRT-ENG-005 (proven by PRT-AGT-001 criterion 3's tests).
+A requirement added to the table is read unless it joins the list, which the review
+checks. Found at phase 6.
+
+**Propagated to:**
+- `08` PRT-THR-001 (criterion 1).
