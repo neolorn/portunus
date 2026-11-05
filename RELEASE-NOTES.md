@@ -12,7 +12,7 @@ format, or a command or an option of the two executables is a major release.
 
 - **The packages**, each at this version and each depending on the others it uses at
   exactly this version: `Portunus.Core`, `Portunus`, `Portunus.Janus`, `Portunus.Hermes`,
-  `Portunus.Testing` and `Portunus.Cli`, the .NET tool `portunus`.
+  `Portunus.Themis`, `Portunus.Testing` and `Portunus.Cli`, the .NET tool `portunus`.
 - **The agent**, `portunus-agent`, self-contained and single-file, as
   `portunus-agent-linux-x64` and `portunus-agent-linux-arm64`.
 - **The agent's unit files**: `portunus-agent@.service`, its drop-in `token.conf` for
@@ -30,6 +30,7 @@ depends on it at exactly this version, so a host's restore reports a mix of vers
 
 - `Portunus.Janus`: `Janus.Hosting` 1.0.0-rc.4, which carries `Janus.Core`.
 - `Portunus.Hermes`: `Hermes.Core` 1.0.0-rc.6.
+- `Portunus.Themis`: `Themis.Core` 1.0.0-rc.2.
 
 A move of a sibling's version is a release of this library.
 
