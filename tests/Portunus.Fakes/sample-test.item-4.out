@@ -1,0 +1,37 @@
+{
+  "id": "xxxxxxxxxxxxxxxxxxxxxxaaar",
+  "title": "Ceres",
+  "version": 1,
+  "vault": {
+    "id": "xxxxxxxxxxxxxxxxxxxxxxaaag",
+    "name": "Sample Test"
+  },
+  "category": "SECURE_NOTE",
+  "last_edited_by": "XXXXXXXXXXXXXXXXXXXXXXAAAU",
+  "created_at": "2026-11-06T13:34:49Z",
+  "updated_at": "2026-11-06T13:34:49Z",
+  "sections": [
+    {
+      "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaal"
+    }
+  ],
+  "fields": [
+    {
+      "id": "notesPlain",
+      "type": "STRING",
+      "purpose": "NOTES",
+      "label": "notesPlain",
+      "reference": "op://Sample Test/Ceres/notesPlain"
+    },
+    {
+      "id": "xxxxxxxxxxxxxxxxxxxxxxaaab",
+      "section": {
+        "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaal"
+      },
+      "type": "STRING",
+      "label": "password",
+      "value": "sample-value-6",
+      "reference": "op://Sample Test/Ceres/Section_xxxxxxxxxxxxxxxxxxxxxxaaal/password"
+    }
+  ]
+}

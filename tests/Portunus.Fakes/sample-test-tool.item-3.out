@@ -1,0 +1,39 @@
+{
+  "id": "xxxxxxxxxxxxxxxxxxxxxxaaak",
+  "title": "Hermes",
+  "version": 1,
+  "vault": {
+    "id": "xxxxxxxxxxxxxxxxxxxxxxaaag",
+    "name": "Sample Test"
+  },
+  "category": "SECURE_NOTE",
+  "last_edited_by": "XXXXXXXXXXXXXXXXXXXXXXAAAU",
+  "created_at": "2026-11-06T13:34:45Z",
+  "updated_at": "2026-11-06T13:34:45Z",
+  "additional_information": "Sample note for Hermes.",
+  "sections": [
+    {
+      "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaai"
+    }
+  ],
+  "fields": [
+    {
+      "id": "notesPlain",
+      "type": "STRING",
+      "purpose": "NOTES",
+      "label": "notesPlain",
+      "value": "Sample note for Hermes.",
+      "reference": "op://Sample Test/Hermes/notesPlain"
+    },
+    {
+      "id": "xxxxxxxxxxxxxxxxxxxxxxaaax",
+      "section": {
+        "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaai"
+      },
+      "type": "STRING",
+      "label": "token",
+      "value": "sample-value-5",
+      "reference": "op://Sample Test/Hermes/Section_xxxxxxxxxxxxxxxxxxxxxxaaai/token"
+    }
+  ]
+}

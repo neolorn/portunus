@@ -1,0 +1,49 @@
+{
+  "id": "xxxxxxxxxxxxxxxxxxxxxxaaat",
+  "title": "Themis",
+  "version": 1,
+  "vault": {
+    "id": "xxxxxxxxxxxxxxxxxxxxxxaaap",
+    "name": "Sample Broken"
+  },
+  "category": "SECURE_NOTE",
+  "last_edited_by": "XXXXXXXXXXXXXXXXXXXXXXAAAU",
+  "created_at": "2026-11-06T13:34:53Z",
+  "updated_at": "2026-11-06T13:34:53Z",
+  "additional_information": "Sample note for Themis.",
+  "sections": [
+    {
+      "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaaw"
+    }
+  ],
+  "fields": [
+    {
+      "id": "notesPlain",
+      "type": "STRING",
+      "purpose": "NOTES",
+      "label": "notesPlain",
+      "value": "Sample note for Themis.",
+      "reference": "op://Sample Broken/Themis/notesPlain"
+    },
+    {
+      "id": "xxxxxxxxxxxxxxxxxxxxxxaaao",
+      "section": {
+        "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaaw"
+      },
+      "type": "STRING",
+      "label": "connection",
+      "value": "sample-value-7",
+      "reference": "op://Sample Broken/Themis/Section_xxxxxxxxxxxxxxxxxxxxxxaaaw/connection"
+    },
+    {
+      "id": "xxxxxxxxxxxxxxxxxxxxxxaaaf",
+      "section": {
+        "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaaw"
+      },
+      "type": "STRING",
+      "label": "bad label",
+      "value": "sample-value-8",
+      "reference": "op://Sample Broken/Themis/Section_xxxxxxxxxxxxxxxxxxxxxxaaaw/bad label"
+    }
+  ]
+}
