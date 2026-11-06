@@ -123,8 +123,9 @@ function Add-Staged([string] $Name, [byte[]] $Bytes) {
 }
 
 # Gathers each identifier of a JSON document: the string of a member named id, or ending in _id,
-# _by or account, of an identifier's form. An id of another form, long enough to be one, stops
-# the run, since this script would not know to replace it.
+# _by or account, of an identifier's form, or a section's id, Section_ and an identifier, whose
+# identifier the fields' section ids and references hold too. An id of another form, long enough
+# to be one, stops the run, since this script would not know to replace it.
 function Add-Identifiers([object] $Node, [string] $Name, [System.Collections.Generic.HashSet[string]] $Found) {
     if ($Node -is [System.Collections.IEnumerable] -and $Node -isnot [string]) {
         foreach ($element in $Node) {
@@ -137,10 +138,14 @@ function Add-Identifiers([object] $Node, [string] $Name, [System.Collections.Gen
         }
     }
     elseif ($Node -is [string] -and ($Name -eq 'id' -or $Name -match '(_id|_by|account)$')) {
+        $section = [regex]::Match($Node, "^Section_(?<identifier>$identifierForm)`$")
         if ($Node -cmatch "^$identifierForm`$") {
             $Found.Add($Node) | Out-Null
         }
-        elseif ($Name -eq 'id' -and $Node -cmatch '^[A-Za-z0-9]{20,}$') {
+        elseif ($section.Success) {
+            $Found.Add($section.Groups['identifier'].Value) | Out-Null
+        }
+        elseif ($Name -eq 'id' -and $Node -cmatch '^(Section_)?[A-Za-z0-9]{20,}$') {
             throw 'An identifier of a form this script does not know was recorded.'
         }
     }
