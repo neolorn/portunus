@@ -1,0 +1,4 @@
+#!/bin/sh
+# portunus-agent as the owner's login runs it over ssh: the agent's commands through the test
+# harness, with the same paths as the agent it reaches (P-044).
+exec dotnet /opt/portunus/agent/Portunus.Agent.Harness.dll /etc/portunus /opt/portunus/swaps "$@"
