@@ -17,8 +17,10 @@
     with --replace (accepted). Each command's output and error are shown and checked to hold
     none of the vault's values, which it reads with op item get --reveal into memory alone and
     never shows or writes; the agent's log is checked for the three pushes and for no value.
-    The owner approves each prompt of the 1Password app, then answers how many there were and
-    whether anything like a value appeared on screen.
+    Before each command it says which prompts of the 1Password app it may raise: one to allow
+    op, the CLI, and one to allow an SSH key, where ssh signs in with a key the app holds. The
+    owner approves each, then answers how many of each kind there were and whether anything
+    like a value appeared on screen.
 
     It stops before anything starts where no public key is found, port 22 of 127.0.0.1 is in
     use, or the owner's known_hosts already names 127.0.0.1. At the end, whatever the outcome,
@@ -26,8 +28,8 @@
     the owner's own known_hosts.old or removes the one ssh-keygen wrote, and removes tmp/check-push/.
 
     It ends with one line: the op version, the commit checked out, passed or failed at the first
-    failing step, the prompts counted, and the agent's one difference from the shipped one. It
-    exits 0 where the check passed and 1 otherwise.
+    failing step, the op prompts and the ssh prompts counted apart, and the agent's one
+    difference from the shipped one. It exits 0 where the check passed and 1 otherwise.
 .PARAMETER Key
     The owner's public key, which the container's login authorizes; by default the first of
     ~/.ssh/id_ed25519.pub and ~/.ssh/id_rsa.pub.
@@ -59,7 +61,8 @@ $name = 'portunus-check-push-' + [System.Convert]::ToHexString([System.Security.
 $commit = [string](& git -C $Repository rev-parse HEAD 2>$null)
 if ($LASTEXITCODE -ne 0 -or -not $commit) { $commit = 'unknown' }
 $version = 'none'
-$prompts = 'no'
+$opPrompts = 'no'
+$sshPrompts = 'no'
 $failure = $null
 $started = $false
 $hostKeyAdded = $false
@@ -109,9 +112,11 @@ function Invoke-Captured([string] $File, [string[]] $Arguments, [bool] $Show, [b
     $result
 }
 
-# Runs portunus from the clone, shown and kept for the check of the vault's values.
-function Invoke-Tool([string[]] $Arguments) {
+# Runs portunus from the clone, shown and kept for the check of the vault's values, saying first
+# which prompts of the 1Password app it may raise.
+function Invoke-Tool([string[]] $Arguments, [string] $Prompts) {
     Write-Host "portunus $($Arguments -join ' ')"
+    Write-Host "  may ask: $Prompts"
     $result = Invoke-Captured 'dotnet' (@($tool) + $Arguments) $true
     $script:shown.Add($result.Output)
     $script:shown.Add($result.Error)
@@ -144,7 +149,7 @@ function Read-Member([object] $Answer, [string[]] $Path) {
 # Stops before anything starts, saying why, with the line.
 function Stop-Before([string] $Reason) {
     Write-Host $Reason
-    Write-Host "op $version, commit $commit, failed at the start, no prompts, $difference"
+    Write-Host "op $version, commit $commit, failed at the start, no op prompts, no ssh prompts, $difference"
     exit 1
 }
 
@@ -213,6 +218,7 @@ Write-Host "ssh: the tool runs $((Get-Command ssh -CommandType Application | Sel
 $shown = [System.Collections.Generic.List[string]]::new()
 try {
     Write-Host 'op --version'
+    Write-Host '  may ask: to allow op'
     $version = (Invoke-Captured 'op' @('--version') $true $true).Output.Trim()
     if ($version -ne $pinned) {
         Set-Failed "op --version answers another version than $pinned"
@@ -304,23 +310,23 @@ try {
     $hostKeyAdded = $true
     Write-Host "Added the container's host key to $knownHosts as 127.0.0.1"
 
-    Write-Host 'Approve each prompt of the 1Password app, and count them.'
-    $check = Invoke-Tool @('check', '--vault', $vault)
+    Write-Host 'Approve each prompt of the 1Password app, and count those to allow op apart from those to allow an SSH key.'
+    $check = Invoke-Tool @('check', '--vault', $vault) 'to allow op'
     if ($check.ExitCode -ne 0) { Set-Failed 'portunus check' }
 
-    $first = Invoke-Tool @('push', '--vault', $vault, '--to', $destination, '--instance', $instance)
+    $first = Invoke-Tool @('push', '--vault', $vault, '--to', $destination, '--instance', $instance) 'to allow op, then to allow an SSH key'
     $firstAnswer = Read-Answer $first.Output
     if ($first.ExitCode -ne 0 -or (Read-Member $firstAnswer 'accepted') -ne $true) { Set-Failed 'portunus push' }
 
-    $status = Invoke-Tool @('status', '--to', $destination, '--instance', $instance)
+    $status = Invoke-Tool @('status', '--to', $destination, '--instance', $instance) 'to allow an SSH key'
     $statusAnswer = Read-Answer $status.Output
     if ($status.ExitCode -ne 0 -or (Read-Member $statusAnswer 'state') -ne 'ready' -or (Read-Member $statusAnswer 'source') -ne 'push') { Set-Failed 'portunus status' }
 
-    $again = Invoke-Tool @('push', '--vault', $vault, '--to', $destination, '--instance', $instance)
+    $again = Invoke-Tool @('push', '--vault', $vault, '--to', $destination, '--instance', $instance) 'to allow op, then to allow an SSH key'
     $againAnswer = Read-Answer $again.Output
     if ($again.ExitCode -ne 1 -or (Read-Member $againAnswer 'accepted') -ne $false -or (Read-Member $againAnswer 'failure', 'code') -ne 'secrets.push.ready') { Set-Failed 'portunus push into a ready agent' }
 
-    $replaced = Invoke-Tool @('push', '--vault', $vault, '--to', $destination, '--instance', $instance, '--replace')
+    $replaced = Invoke-Tool @('push', '--vault', $vault, '--to', $destination, '--instance', $instance, '--replace') 'to allow op, then to allow an SSH key'
     $replacedAnswer = Read-Answer $replaced.Output
     if ($replaced.ExitCode -ne 0 -or (Read-Member $replacedAnswer 'accepted') -ne $true) { Set-Failed 'portunus push --replace' }
 
@@ -330,6 +336,7 @@ try {
     # written, dropped once compared. A set's .current, a version's number, and the notes are not
     # secrets, and are left out.
     Write-Host "Reading the vault's values to compare, never shown"
+    Write-Host '  may ask: to allow op'
     $values = [System.Collections.Generic.List[string]]::new()
     $listed = Invoke-Captured 'op' @('item', 'list', '--vault', $vault, '--format', 'json') $false $true
     if ($listed.ExitCode -ne 0) {
@@ -374,9 +381,14 @@ try {
     $listed = $null
 
     do {
-        $count = Read-Host -Prompt 'How many times did the 1Password app ask you to approve, in all? (a number)'
+        $count = Read-Host -Prompt 'How many times did the 1Password app ask you to allow op, the CLI? (a number)'
     } until ($count -match '^\d{1,3}$')
-    $prompts = $count
+    $opPrompts = $count
+
+    do {
+        $count = Read-Host -Prompt 'How many times did the 1Password app ask you to allow an SSH key? (a number)'
+    } until ($count -match '^\d{1,3}$')
+    $sshPrompts = $count
 
     do {
         $seen = Read-Host -Prompt 'Did anything that looked like a secret value appear on the screen? (yes or no)'
@@ -431,5 +443,5 @@ finally {
 }
 
 $outcome = if ($failure) { "failed at $failure" } else { 'passed' }
-Write-Host "op $version, commit $commit, $outcome, $prompts prompts, $difference"
+Write-Host "op $version, commit $commit, $outcome, $opPrompts op prompts, $sshPrompts ssh prompts, $difference"
 exit $(if ($failure) { 1 } else { 0 })
