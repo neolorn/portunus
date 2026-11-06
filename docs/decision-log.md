@@ -1071,3 +1071,64 @@ against the real one comes before each release; the fake stays for the pipeline.
 **Propagated to:**
 - `06` PRT-ENG-008 (the scenarios) and PRT-ENG-011 (the release); the implementation plan
   (phase 7, and its inputs).
+
+---
+
+## P-044 — The owner's check by hand on Windows, scripted
+
+**Date:** 2026-11-06 · **Status:** accepted · **Amends:** P-009, PRT-ENG-008
+
+**TL;DR.** `build/check-push-by-hand.ps1`, run once by the owner on the owner's Windows PC,
+does every part of P-009's check by hand that a script can: it builds the tool and the
+agent from the clone, starts a throwaway Linux container running OpenSSH's server and the
+agent in push-only mode, pushes the `Sample Test` vault into it through the real `op`, the
+1Password app and Windows' own `ssh`, and checks what the screen and the agent show. The
+owner approves the 1Password app's prompts and types how many there were. The owner's
+request (2026-11-06): do what can be done without him, and give him only what cannot.
+
+- **The container.** Built from a Dockerfile under `build/check-push/`, on the .NET SDK's
+  image at the SDK of `global.json` (the image the `linux` tests already use), with
+  Debian's `openssh-server` from that image's own package sources. It holds the agent
+  published for `linux-x64` from the clone, its file `/etc/portunus/sample.json` with
+  `Portunus:Agent:Source` `push`, the vault `Sample Test`, one process and a push group,
+  and a login `owner` in that group whose `authorized_keys` holds the owner's own public
+  key. It listens on `127.0.0.1:2222` alone, runs the agent as its root as the `linux`
+  tests do (P-027), and is removed at the end, whatever the outcome.
+- **The owner's keys and `known_hosts`.** The owner's public key is the file `-Key` names,
+  or the first of `~/.ssh/id_ed25519.pub` and `~/.ssh/id_rsa.pub`; with none the script
+  stops before anything starts and says so. The container's host key is added to the
+  owner's `known_hosts` as `[127.0.0.1]:2222` before the first push, since the tool refuses
+  an unknown host (PRT-PSH-002), and removed at the end with `ssh-keygen -R`; the script
+  says both as it does them. Nothing else of the owner's configuration is touched.
+- **The run.** `op --version` first (2.41.1, else it stops); then `portunus check --vault
+  "Sample Test"`; then `portunus push --vault "Sample Test" --to
+  ssh://owner@127.0.0.1:2222 --instance sample`, which must be accepted with the vault's
+  number of items; then `portunus status`, which must answer `ready` with the source
+  `push`; then the same push again, refused with `secrets.push.ready`; then with
+  `--replace`, accepted. Each command's standard output and standard error are captured as
+  well as shown, and checked to hold none of the vault's values: the script reads them
+  with `op item get --reveal` into memory alone, compares, and clears them, writing none
+  anywhere. The agent's log inside the container is checked for the three pushes, each
+  with its outcome and number of items, and for no value.
+- **What only the owner does.** Approves each 1Password prompt (Windows Hello), then
+  answers two questions the script asks: how many prompts appeared, and whether anything
+  that looked like a value appeared on screen. P-009 left open whether each of the tool's
+  `op` commands prompts again on Windows; the count settles it.
+- **The result.** One line: the `op` version, the commit checked out, `passed` or `failed`
+  with the first failing step, and the prompts counted. The owner gives the line to the
+  lead, and the phase report names the check as the owner's, with that line; macOS and
+  Linux stay named as not yet checked by hand.
+
+*Rejected:*
+- **A push into a real server:** none runs the agent yet, and the production server takes
+  nothing before its release.
+- **Checking only the `op` part,** with a push to a host that does not answer: P-009's
+  prompts would show, but the push itself (Windows' `ssh` carrying the payload on its
+  standard input to its end) would stay unproven on Windows, where a Unix domain socket
+  already lost the end of a stream once (phase 7).
+- **A temporary `ssh` configuration** passed to `ssh`: the tool runs the system's `ssh`
+  with the owner's own configuration, and the check proves exactly that.
+
+**Propagated to:**
+- `06` PRT-ENG-001 (the repository's files) and PRT-ENG-008 (the script); the
+  implementation plan (phase 8, and phase 4's input).
