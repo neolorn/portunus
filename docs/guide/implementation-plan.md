@@ -40,6 +40,7 @@ default and limit. `decision-log.md` is rationale.
 | 5 | The adapters | `00` PRT-OVR-002; `04` PRT-LIB-006, PRT-LIB-001 (the adapters' rows); `03` PRT-ROT-001, PRT-ROT-002; `06` PRT-ENG-001 (`vendor/`), PRT-ENG-009 (the siblings' packages) | Each sibling's `ISecretSource` answers its secrets from the fixed client in the sibling's own types and forms, its refusals naming the secret; a provider's item is read where configured; Janus gets its current version and Hermes every version in order |
 | 6 | Release gate, sample host and release 1.0.0-rc.1 | `04` PRT-LIB-007 (the compatibility gate; criteria 1 and 2); `06` PRT-ENG-001 (the sample host, and its gate of PRT-ENG-012), PRT-ENG-011 (the release commit's checks, criteria 2 and 3; the release job, criterion 4); `04` PRT-LIB-001 for the sample host's row; `05` PRT-OPS-003 and `RELEASE-NOTES.md`; `08` PRT-THR-001, PRT-THR-002, PRT-THR-003, PRT-THR-005, the checklist attached; `00` PRT-OVR-003. The release commit `chore: release 1.0.0-rc.1` comes in the same pull request once the review has passed, on the lead's message, and the tag `v1.0.0-rc.1` after its merge | The sample host builds from the packages packed from the same commit and its tests pass in the gate; a release commit outside its rule fails the gate; version 1.0.0-rc.1 of every package, both agent executables, the unit files, the checklist and `SHA256SUMS` on the tag's release, marked a pre-release, with its changelog and release notes |
 | 7 | The real `op` on the owner's computer | `06` PRT-ENG-008 (`build/check-real-op.ps1` in place of `build/record-op-scenarios.ps1`; the recorded scenarios from the owner's first run, and the tests phases 3 and 4 left waiting on them), PRT-ENG-011 (the release's wait on the run, checked by the lead) (P-043) | The run ends `same` on files equal to those committed, each instant set aside; `changed` with the new files in place and the `integration` and `linux` tests run on them; `failed`, with nothing left behind, on a finding of P-035 or an `op` other than 2.41.1; every criterion phases 3 and 4 left waiting on the recordings has its test |
+| 8 | The owner's check by hand, and the threat test | `06` PRT-ENG-008 (`build/check-push-by-hand.ps1` and `build/check-push/`, P-044); `08` PRT-THR-001 criterion 1 (its test over this repository, which waited on the recorded scenarios) | The owner's run on Windows ends `passed`, its line in the report; PRT-THR-001 criterion 1's test passes over this repository |
 
 **Waiting on inputs.**
 - Phase 0: the name the packages carry as their authors, which the lead's first message
@@ -53,7 +54,8 @@ default and limit. `decision-log.md` is rationale.
 - Phase 4: the owner's check by hand, on the owner's Windows PC (macOS and Linux named in
   the report as not yet checked by hand until the owner has one to check on), that a push
   prompts through the 1Password app and that none of its `op` commands writes a value to
-  the terminal, named in the report as checked by the owner (P-009).
+  the terminal, named in the report as checked by the owner (P-009); from P-044, the owner's
+  run of phase 8's script, `build/check-push-by-hand.ps1`, and its line.
 - Phase 5: the siblings' packages for `vendor/` at the versions of `07` section 7, which the
   lead's message names with their release tags (P-022).
 - Phase 6's release commit and tag: the lead's message to release a release candidate,

@@ -70,7 +70,9 @@ The repository's other files: at its root the solution, `Directory.Build.props`,
 per release, headed by its version and written in its release commit, or before it in a
 `docs:` commit of the same pull request, holding the deployment's duties as they stand at
 that release and the sibling versions the adapters are built against); the pipeline's
-definition under `.github/workflows/`; the gates' scripts under `build/gates/`, with the
+definition under `.github/workflows/`; the owner's scripts, `build/check-real-op.ps1`
+(P-043) and `build/check-push-by-hand.ps1` with its container's files under
+`build/check-push/` (P-044); the gates' scripts under `build/gates/`, with the
 secret scanner's configuration there, `build/gates/release-baseline.json` (`04`
 PRT-LIB-007) and `build/gates/built-items.txt`, the acceptance criteria proven so far by
 a test, one per line as `PRT-AGT-004 AC2`, which the test-name gate reads and each phase
@@ -294,7 +296,9 @@ class, and its scenario of a version other than the pinned one from the recorded
 with the version changed, each marked as not recorded; every other scenario is recorded
 by the owner's run of `build/check-real-op.ps1` against the real `op` on the owner's own
 computer, which records them afresh before each release and compares them with those
-committed (P-028, P-043). An
+committed (P-028, P-043). The owner's check by hand of a push on
+Windows (P-009) is `build/check-push-by-hand.ps1`, run once on the owner's computer, which
+pushes into a throwaway container through the real `op` and the system's `ssh` (P-044). An
 acceptance-criterion test is named `ITEM_ACn_Outcome`
 (`PRT_AGT_007_AC2_UndeclaredAddressIsDenied`); every other test
 `Method_Scenario_Outcome`. No mocking package. The fakes are hand-written: the fake `op`
@@ -306,7 +310,7 @@ project, answering recorded answers on a real socket; and `Portunus.Testing`'s o
 Time is a test `TimeProvider`. Every criterion a test can decide has one; the rest are
 named in the phase report with how they were checked.
 
-*Source: P-005, P-016, P-043*
+*Source: P-005, P-016, P-043, P-044*
 
 **Acceptance criteria**
 1. No mocking package is referenced.
