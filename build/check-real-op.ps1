@@ -25,7 +25,8 @@
     (build/gates/gate-tests.ps1), printing their result. The written scenarios (P-028) are
     neither run nor touched.
 
-    It ends with one line: the op version, the commit checked out, and same, changed or failed.
+    It ends with one line: the op version, the commit checked out, and same, changed or failed;
+    where no op is on the PATH, the line says so, how to put it there, the commit and failed.
     A failed run leaves nothing behind. It never prints a value, a token, an identifier or op's
     output: only the files it records, the exit codes and its outcome. The tokens are read
     without echo, held only for op's environment, and never written. It exits 0 for same, 2 for
@@ -403,13 +404,17 @@ $commit = [string](& git -C $Repository rev-parse HEAD 2>$null)
 if ($LASTEXITCODE -ne 0 -or -not $commit) { $commit = 'unknown' }
 $version = 'none'
 $outcome = 'failed'
+$missing = $false
 $token = $null
 $revoked = $null
 try {
-    $op = (Get-Command op -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1).Source
-    if (-not $op) {
+    $found = @(Get-Command op -CommandType Application -ErrorAction SilentlyContinue)
+    if ($found.Count -eq 0) {
+        $missing = $true
         throw 'No op is on the PATH.'
     }
+
+    $op = $found[0].Source
 
     $version = [System.Text.Encoding]::UTF8.GetString((Invoke-Op $op @('--version') $null).Output).Trim()
     if ($version -ne $pinned) {
@@ -478,7 +483,10 @@ try {
     }
 }
 catch {
-    Write-Host $_.Exception.Message
+    if (-not $missing) {
+        Write-Host $_.Exception.Message
+    }
+
     Undo-InPlace
     $outcome = 'failed'
 }
@@ -488,5 +496,10 @@ finally {
     Remove-Item -Recurse -Force -LiteralPath $work -ErrorAction SilentlyContinue
 }
 
-Write-Host "op $version, commit $commit, $outcome"
+if ($missing) {
+    Write-Host "op was not found on the PATH: install op $pinned and add its folder to the PATH, then run this again; commit $commit, failed"
+}
+else {
+    Write-Host "op $version, commit $commit, $outcome"
+}
 exit $(switch ($outcome) { 'same' { 0 } 'changed' { 2 } default { 1 } })
