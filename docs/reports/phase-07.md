@@ -15,6 +15,12 @@ Part 1, before the owner's first run.
 
 `build/gates/gate-tests.ps1` takes `-Kinds`, the kinds to run of the four, by default every one, as the gate runs them.
 
+## Fixed after the owner's first runs
+
+On `phase-07-fix`, two defects his runs found, under P-035 and P-043 as they stand:
+- With no `op` on the `PATH`, the run stopped on a property of nothing and ended `op none ... failed`. It now ends with one line, `op was not found on the PATH: install op 2.41.1 and add its folder to the PATH, then run this again; commit <sha>, failed`, exits 1 and leaves nothing behind.
+- A real item's custom fields land in a section whose id is `Section_` and an identifier, which each field's `section.id` and its `reference` hold too; the identifier was left, and the leak check stopped the run on `sample-test.item-1.out`. The identifier inside a section id of that form, under any member the script gathers, is now replaced everywhere, the references included. The leak check is as strict, and an `id` of any other unknown form, `Section_` and a string of another length among them, is still refused.
+
 ## Items not built
 
 Part 2, waiting on the owner's first run, whose files the lead's message hands over:
@@ -63,6 +69,10 @@ Before each release, and now for the first run:
   - a committed written scenario: `same`, and it is untouched;
   - a token in `op`'s answer, an identifier in a member it does not gather (`uuid`), and an `id` of an unknown form: `failed`, exit 1, `tmp/check-real-op/` removed and nothing of `tests/Portunus.Fakes/` changed;
   - an `op` answering 2.41.0: `failed` before any prompt, exit 1.
+- The fix, tried the same way, the fake `op`'s items now holding the section `add more` and an unnamed `Section_` one, which each field and its reference name; the script before the fix failing on both, as the owner's runs did:
+  - no `op` on the `PATH`: the one line, exit 1, nothing left in the clone;
+  - the first run: `changed`, every section id and reference holding the placeholder of its identifier, exit 2; of its tests, one of `Portunus.Tests` that waits on a test clock timed out once under the run's load and passed on each of eight runs after; those files committed: `same`, and `same` with only the instants changed;
+  - a section id of `Section_` and 23 letters: `failed`, exit 1; a token, `uuid`, an `id` of an unknown form and 2.41.0: `failed` as before.
 - The prompts without echo: `Read-Host -AsSecureString`, as P-035's script did; the trial answered them in its own session, since a secure prompt reads the console alone.
 - `06` PRT-ENG-008, tests written first: the script is a tool the owner runs, tried by hand as above, as the recording script was in phase 4.
 
@@ -94,3 +104,4 @@ Before each release, and now for the first run:
 - The commit: the report's own commit, the head of `phase-07`, on `b986b90`; the branch stands on the lead's `cf2c781`.
 - Fast checks on every commit; before the push, the full gates by `run-gates.ps1 -Base origin/phase-07 -Head HEAD`.
 - The gate of record: the pipeline's `gates` run on the report's own commit, whose identifier and result the message naming the pull request gives.
+- The fix: the head of `phase-07-fix`, on `01f361e`, before the push the full gates by `run-gates.ps1 -Base origin/main -Head HEAD`, and the pipeline's `gates` run on its pull request.
