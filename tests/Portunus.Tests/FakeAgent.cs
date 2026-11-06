@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,8 +13,11 @@ namespace Portunus.Tests;
 /// <summary>
 /// A fake agent on a real Unix domain socket (<c>06</c> PRT-ENG-008): it takes each
 /// connection as the agent does, one request read until the client shuts down its sending
-/// side, and answers it with what <see cref="Answer"/> gives for it, an answer recorded in
-/// <c>07</c> section 6's form, or closes the connection without an answer where it gives none.
+/// side, or until it holds one whole JSON document, and answers it with what
+/// <see cref="Answer"/> gives for it, an answer recorded in <c>07</c> section 6's form, or
+/// closes the connection without an answer where it gives none. The whole document ends the
+/// request because Windows' Unix domain sockets at times never deliver the end of the client's
+/// sending side to a read that waits for it; the client sends nothing after its request.
 /// </summary>
 internal sealed class FakeAgent : IAsyncDisposable
 {
@@ -115,8 +119,27 @@ internal sealed class FakeAgent : IAsyncDisposable
             }
 
             length += count;
+            if (IsWhole(request.AsSpan(0, length)))
+            {
+                break;
+            }
         }
 
         return Encoding.UTF8.GetString(request, 0, length);
+    }
+
+    /// <summary>Whether <paramref name="read"/> holds one whole JSON document, the request's form (<c>07</c> section 6).</summary>
+    private static bool IsWhole(ReadOnlySpan<byte> read)
+    {
+        try
+        {
+            Utf8JsonReader reader = new(read, isFinalBlock: false, state: default);
+            return reader.Read() && reader.TrySkip();
+        }
+        catch (JsonException)
+        {
+            // Not a request's form: read on to the end of the sending side.
+            return false;
+        }
     }
 }
