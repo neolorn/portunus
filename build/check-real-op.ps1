@@ -14,9 +14,12 @@
     It keeps everything in memory, then replaces every 1Password identifier it recorded (a
     vault's, an item's, a user's, an account's, a field's and a section's) with a placeholder of
     the same length and alphabet, the same identifier always the same placeholder across every
-    file, and an account's sign-in address with a placeholder address (P-035). It writes the
-    files under tmp/ first and reads them again; a run that finds an identifier left, or either
-    token, removes all of them and fails.
+    file, and an account's sign-in address with a placeholder address (P-035), and the clone's
+    own path, which op names where it reads its configuration, with <repository>. A list's
+    entries, and the items read after it, are kept in the order of their identifiers, so of their
+    placeholders, whatever order op lists them in. It writes the files under tmp/ first and reads
+    them again; a run that finds an identifier left, the clone's path or either token, removes
+    all of them and fails.
 
     It then compares the files with the recorded scenarios' files the commit holds under
     tests/Portunus.Fakes/, each instant set aside: the same set of files, each the same. Where
@@ -61,6 +64,12 @@ $identifierForm = '(?<![A-Za-z0-9])[A-Za-z0-9]{26}(?![A-Za-z0-9])'
 
 # An account's sign-in address: a name under 1Password's own domains.
 $addressForm = '(?<![A-Za-z0-9.-])([A-Za-z0-9-]+)(\.1password\.(?:com|ca|eu))'
+
+# The clone's own path, as op may write it: as it is, with each backslash doubled as a quoted
+# string holds it, and with forward slashes; replaced by a placeholder, so the clone a run is made
+# from does not change what it records.
+$repositoryForms = @($Repository.Replace('\', '\\'), $Repository, $Repository.Replace('\', '/')) | Select-Object -Unique
+$repositoryPlaceholder = '<repository>'
 
 # An instant as op writes one, RFC 3339, which changes at every run and is set aside.
 $instantForm = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})'
@@ -165,10 +174,53 @@ function Get-Placeholder([string] $Identifier, [int] $Number) {
     if ($Identifier -cmatch '[A-Z]') { $placeholder.ToUpperInvariant() } else { $placeholder }
 }
 
-# Whether a text holds an identifier other than a placeholder, or either token.
+# Whether a text holds an identifier other than a placeholder, either token, or the clone's path
+# in any case.
 function Test-Leak([string] $Text, [System.Collections.Generic.HashSet[string]] $Placeholders, [string[]] $Tokens) {
     $left = @([regex]::Matches($Text, $identifierForm) | Where-Object { -not $Placeholders.Contains($_.Value) })
-    $left.Count -gt 0 -or @($Tokens | Where-Object { $_ -and $Text.Contains($_) }).Count -gt 0
+    $left.Count -gt 0 -or @($Tokens | Where-Object { $_ -and $Text.Contains($_) }).Count -gt 0 -or
+    @($repositoryForms | Where-Object { $Text.Contains($_, [System.StringComparison]::OrdinalIgnoreCase) }).Count -gt 0
+}
+
+# A text with the clone's path, in each of its forms and in any case, replaced by the placeholder.
+function Get-WithoutRepository([string] $Text) {
+    foreach ($form in $repositoryForms) {
+        $Text = [regex]::Replace($Text, [regex]::Escape($form), $repositoryPlaceholder, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    }
+
+    $Text
+}
+
+# A list's text with its entries in the order of their identifiers, as the replacement numbers
+# them: each entry's own text kept as op wrote it, between the text op wrote around and between
+# them.
+function Get-ListInOrder([string] $Text) {
+    $document = [System.Text.Json.JsonDocument]::Parse($Text)
+    try {
+        $entries = @(foreach ($element in $document.RootElement.EnumerateArray()) {
+                [pscustomobject]@{ Id = $element.GetProperty('id').GetString(); Raw = $element.GetRawText() }
+            })
+    }
+    finally {
+        $document.Dispose()
+    }
+
+    if ($entries.Count -lt 2) {
+        return $Text
+    }
+
+    $starts = [System.Collections.Generic.List[int]]::new()
+    $cursor = 0
+    foreach ($entry in $entries) {
+        $start = $Text.IndexOf($entry.Raw, $cursor, [System.StringComparison]::Ordinal)
+        $starts.Add($start)
+        $cursor = $start + $entry.Raw.Length
+    }
+
+    $between = $Text.Substring($starts[0] + $entries[0].Raw.Length, $starts[1] - $starts[0] - $entries[0].Raw.Length)
+    $before = $Text.Substring(0, $starts[0])
+    $after = $Text.Substring($cursor)
+    $before + ((@($entries | Sort-Object -Property Id) | ForEach-Object Raw) -join $between) + $after
 }
 
 # Replaces every identifier and sign-in address in every staged file (P-035), checks that none,
@@ -201,7 +253,7 @@ function Save-Staged([string[]] $Tokens) {
 
     $addresses = @{}
     foreach ($name in @($staged.Keys)) {
-        $text = $staged[$name]
+        $text = Get-WithoutRepository $staged[$name]
         foreach ($identifier in $replacements.Keys) {
             $text = $text.Replace($identifier, $replacements[$identifier])
         }
@@ -221,7 +273,7 @@ function Save-Staged([string[]] $Tokens) {
     $placeholders = [System.Collections.Generic.HashSet[string]]::new([string[]] @($replacements.Values), [System.StringComparer]::Ordinal)
     foreach ($name in @($staged.Keys)) {
         if (Test-Leak $staged[$name] $placeholders $Tokens) {
-            throw "$name held an identifier left unreplaced or a token."
+            throw "$name held an identifier left unreplaced, the clone's path or a token."
         }
     }
 
@@ -234,7 +286,7 @@ function Save-Staged([string[]] $Tokens) {
     # What was written is read again and checked again.
     foreach ($name in $staged.Keys) {
         if (Test-Leak ([System.IO.File]::ReadAllText((Join-Path $recordedFolder $name))) $placeholders $Tokens) {
-            throw "The file written for $name held an identifier or a token."
+            throw "The file written for $name held an identifier, the clone's path or a token."
         }
     }
 }
@@ -276,16 +328,18 @@ function Save-Op([string] $Op, [string] $Prefix, [string[]] $Arguments, [string]
     [pscustomobject]@{ Command = (New-Command (Get-Matched $Arguments) $output $errorFile $result.ExitCode); Result = $result }
 }
 
-# Records a vault: the list, then each item. The agent's commands run with the service account's
-# token and --config (01 PRT-AGT-003); the tool's run with no token and no --config, so op signs
-# in through the owner's desktop app, and in the tool's order of options (02 PRT-PSH-002).
+# Records a vault: the list, its entries kept in the order of their identifiers, then each item in
+# that order. The agent's commands run with the service account's token and --config (01
+# PRT-AGT-003); the tool's run with no token and no --config, so op signs in through the owner's
+# desktop app, and in the tool's order of options (02 PRT-PSH-002).
 function Save-Vault([string] $Op, [string] $Vault, [string] $Prefix, [string] $Token, [object] $Version, [bool] $Tool) {
     $commands = [System.Collections.Generic.List[object]]::new()
     $commands.Add($Version)
     $configuration = if ($Tool) { @() } else { @('--config', $config) }
     $list = Save-Op $Op "$Prefix.list" (@('item', 'list', '--vault', $Vault, '--format', 'json') + $configuration) $Token $true
     $commands.Add($list.Command)
-    $entries = @([System.Text.Encoding]::UTF8.GetString($list.Result.Output) | ConvertFrom-Json)
+    $staged["$Prefix.list.out"] = Get-ListInOrder $staged["$Prefix.list.out"]
+    $entries = @([System.Text.Encoding]::UTF8.GetString($list.Result.Output) | ConvertFrom-Json | Sort-Object -Property id)
     $number = 0
     foreach ($entry in $entries) {
         $number++
