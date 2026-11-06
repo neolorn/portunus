@@ -21,16 +21,32 @@ On `phase-07-fix`, two defects his runs found, under P-035 and P-043 as they sta
 - With no `op` on the `PATH`, the run stopped on a property of nothing and ended `op none ... failed`. It now ends with one line, `op was not found on the PATH: install op 2.41.1 and add its folder to the PATH, then run this again; commit <sha>, failed`, exits 1 and leaves nothing behind.
 - A real item's custom fields land in a section whose id is `Section_` and an identifier, which each field's `section.id` and its `reference` hold too; the identifier was left, and the leak check stopped the run on `sample-test.item-1.out`. The identifier inside a section id of that form, under any member the script gathers, is now replaced everywhere, the references included. The leak check is as strict, and an `id` of any other unknown form, `Section_` and a string of another length among them, is still refused.
 
+## Items built in part 2
+
+After the owner's first run, which ended `op 2.41.1, commit eaf51c7, changed` with the `integration` and `linux` tests passed. The `linux` kind ran here in the SDK's container, where the agent's 58 tests and the tool's 6 passed.
+
+**`06` PRT-ENG-008**, the scenarios:
+- The owner's 33 recorded files, committed as he recorded them, in a `test:` commit of their own (P-043).
+- The written scenarios, once, in the form P-028 gives (P-043 as f8f7582 amends it), each marked `"recorded": false`: `rate-limited`, the revoked token's recorded list with its standard error's status made `(429) Too Many Requests`; `wrong-version`, the recorded `op --version` answering 2.41.0.
+- The fakes keep each call's process identifier beside its arguments and its environment's names (`tests/Portunus.Fakes`), so a test watches the `op` it started alone.
+- The agent's tests: a test clock (`TestClock`), the recordings' reader (`Recording`), and the launcher's fake answering as a recorded scenario, its list paused where a test asks, the scenario swapped whole between attempts (`FakeOp.Answering`, `Answer`, `Environments`, `IsRunning`). The tool's tests: the recordings' reader, a scenario copied with its files (`Recording.Copy`, `Calls`), and the running agent answering as a recording through the fakes, its process `web` reading every secret of "Sample Test" through the harness's client (`RunningAgent.Prepared`, `ReadAsync`).
+
+The tests phases 3 and 4 left waiting on the recordings:
+- AgentStartTests (linux): PRT_AGT_002_AC1_OpOfAnotherVersionStopsTheStartNamingTheVersionFound, TokenFileMissingOrEmptyStopsTheStartWithTokenUnavailableHavingRunOnlyOpVersion
+- AgentFetchTests (linux): PRT_AGT_003_AC1_VaultOfFourValidItemsIsFetchedWithOneListAndFourGetsAndTheAgentIsReady; PRT_AGT_003_AC2_VaultWithABrokenItemLeavesTheAgentWaitingAsLayoutInvalidHoldingNothing; PRT_AGT_003_AC3_FetchedAgentRunsNoFurtherOpWhateverTheTimeAndHoldsNoToken; PRT_AGT_003_AC4_OpPassingItsTimeoutIsKilledAndTheAttemptFailsAsUnreachable; PRT_AGT_004_AC1_AttemptsAfterFailuresStartAtZeroThenDoubleFromFirstWithinAFifthUpToMax; PRT_AGT_004_AC2_RateLimitMakesTheNextPauseMaxAndTheStatusRateLimited; PRT_AGT_004_AC3_SetBreakingTheLayoutIsFetchedOnceAndNeverAgain; PRT_AGT_005_AC1_StatusAnswersTheFailuresReasonBetweenAttemptsFetchingDuringOneAndReadyAfter; PRT_PSH_003_AC4_PushIntoAVaultAgentWaitingBetweenAttemptsEndsItsAttempts; PRT_AGT_001_AC4_FetchPushAndReadsLeaveNoValueInAnyFileOrLogLine
+- ToolPushTests (linux): PRT_PSH_002_AC1_PushRunsTheCommandsWithTheirArgumentsAndEnvironmentAndTheAgentReceivesEveryField; PRT_PSH_002_AC3_PushWritesNoValueOnItsOutputOrErrorOrInAnyFile
+- ToolVaultTests (integration): PRT_PSH_002_AC2_PushOfAVaultBreakingTheLayoutIsRefusedNamingItemAndFieldAndSshNeverRuns; PRT_PSH_002_AC4_OpBelowThePinnedVersionIsRefusedWithOpVersion; PRT_PSH_004_AC1_CheckOfAVaultWithOneErrorAndOneWarningWritesBothAndExitsOne, CheckOfAVaultWithAWarningAloneWritesItAndExitsZero
+
+`build/gates/built-items.txt` holds each of these criteria.
+
+**The test that timed out under load**, `AgentSecretClientTests.ReadAsync_AgentClosingWithoutAnAnswer_WaitsAsForAnAgentItCannotReach` ("No timer was made within the test's patience"). The cause: on Windows, a Unix domain socket at times never delivers the end of the client's sending side to a read that waits for it. The fake agent read each request to that end, so it waited for ever; the client's exchange is bounded by `Portunus:Client:Timeout` on the test's clock, which the test advances only to the client's pauses, so the exchange never ended and the test's patience passed. The fake agent now takes a request once it holds one whole JSON document, the form of every request, or at the end of the sending side, whichever comes first (`FakeAgent`). No retry and no patience changed; the client is unchanged, since the agent it talks to runs on Linux alone.
+
 ## Items not built
 
-Part 2, waiting on the owner's first run, whose files the lead's message hands over:
-- The recorded scenarios of `tests/Portunus.Fakes/`, and the tests phases 3 and 4 left waiting on them: `01` PRT-AGT-002 criterion 1's `secrets.agent.opversion` naming a version found and its `secrets.agent.tokenunavailable` through the start; `01` PRT-AGT-003 criteria 1 to 4, PRT-AGT-004 criteria 1 to 3, the fetch's part of PRT-AGT-005 criterion 1, PRT-AGT-001 criterion 4; `02` PRT-PSH-002 criteria 1 to 4, PRT-PSH-003 criterion 4, PRT-PSH-004 criterion 1.
-- `08` PRT-THR-001 criterion 1's test over this repository, which those tests let pass.
-- The written scenarios `rate-limited` and `wrong-version` (P-028), which open question 1 asks about.
+- `08` PRT-THR-001 criterion 1's test over this repository: parked, on the lead's message.
+- The owner's check by hand on Windows (P-009): parked since phase 4, on the lead's message.
 
 `06` PRT-ENG-011, the release's wait on the owner's run, is checked by the lead when a tag is pushed.
-
-Still parked from phase 4, waiting on the owner: his check by hand on Windows.
 
 ## What the owner makes once, then runs before each release
 
@@ -73,6 +89,8 @@ Before each release, and now for the first run:
   - no `op` on the `PATH`: the one line, exit 1, nothing left in the clone;
   - the first run: `changed`, every section id and reference holding the placeholder of its identifier, exit 2; of its tests, one of `Portunus.Tests` that waits on a test clock timed out once under the run's load and passed on each of eight runs after; those files committed: `same`, and `same` with only the instants changed;
   - a section id of `Section_` and 23 letters: `failed`, exit 1; a token, `uuid`, an `id` of an unknown form and 2.41.0: `failed` as before.
+- The check on part 2's commit, with the recorded files committed: run in a clone under `tmp/` through a wrapper `op` that runs the fakes' `op` with the committed scenarios, chosen by the token and the vault each command names, its prompts answered by the trial: `op 2.41.1, commit 5ae10c2, same`, exit 0, the clone unchanged and the written scenarios untouched. The placeholders the fake answers are of an identifier's form, and the check numbers identifiers in their sorted order, so each placeholder is replaced by itself.
+- The cause of the client's test timing out: a program under `tmp/` whose client sends a request and shuts down its sending side and whose server reads to that end, on Windows, waited for ever on the server's read with the whole request read, at round 181 and round 287 of 300 in two of four runs; with the server taking the request once it is whole, 6000 rounds ended each one. Portunus.Tests' `integration` kind then passed ten runs in a row.
 - The prompts without echo: `Read-Host -AsSecureString`, as P-035's script did; the trial answered them in its own session, since a secure prompt reads the console alone.
 - `06` PRT-ENG-008, tests written first: the script is a tool the owner runs, tried by hand as above, as the recording script was in phase 4.
 
@@ -94,10 +112,15 @@ Before each release, and now for the first run:
 - `build/check-real-op.ps1`, the solution built before the tests on `changed`: the tests start the fakes and the harness, which the solution's build makes, as the gates build it before `gate-tests.ps1` runs. Governs: P-043, "runs the `integration` and `linux` tests on them".
 - `build/check-real-op.ps1`, the exit codes: 0, 2 and 1 for `same`, `changed` and `failed`, beside the last line P-043 gives, so a run is told apart by its code too. Governs: P-043, "ends with one line".
 - `build/gates/gate-tests.ps1`, `-Kinds`: by default every kind, so the gate runs as before. Governs: P-043 with `06` PRT-ENG-012.
+- `tests/Portunus.Agent.Tests/FakeOp.cs`, the environment's names checked by PRT-AGT-003 criterion 1: less the fake's own variable and `PWD`, which the launcher's `/bin/sh` sets as it starts, after the agent's start, where the agent passed none. Governs: P-029, "checks them less the fake's own variable, which the script added after the agent's start".
+- The searches of PRT-AGT-001 criterion 4 and PRT-PSH-002 criterion 3: every regular file under the test's folder but the fakes' copy of the recording, which holds the vault's values as `op` answered them, and each value as its bytes and in base64url; a set's `.current`, a version's number, is not searched, since the configuration's numbers hold it. Governs: `06` PRT-ENG-008, a scenario of the fakes is the test's.
+- `tests/Portunus.Tests/FakeAgent.cs`, a request ended by its whole JSON document: the client sends nothing after its request, so the answer is the one the end of its sending side would give. Governs: `06` PRT-ENG-008, a fake agent answering recorded answers on a real socket.
+- `tests/Portunus.Cli.Tests/OpCommandTests.cs`, the `op` checked killed: the one whose process the fake kept, since the tool's other tests now start the fake `op` beside it. Governs: `02` PRT-PSH-002, the tool's child processes killed when it is cancelled.
 
 ## Open questions
 
-1. **Tier 2: the written scenarios on the first run.** Item: `06` PRT-ENG-008 (P-028, P-043). P-043 leaves the written scenarios "as they are", and the check neither runs nor writes them; P-035's script wrote both, `rate-limited` from the revoked token's error with its status changed to `(429)`, and `wrong-version` from the recorded version changed to 2.41.0. No written scenario is committed yet, so after the first run none exists. Readings: (a) the check writes them on a run where none is committed, from what it recorded, as P-035's script did, and never after; (b) part 2 writes them from the first run's files, as P-028 gives their form, and the check never does. Smallest fix: (a) the lines P-035's script had, behind one condition; (b) none. Parked: nothing of part 1 under (b); under (a), the check changes before the owner's first run.
+1. **Tier 2: the written scenarios on the first run.** Item: `06` PRT-ENG-008 (P-028, P-043). P-043 leaves the written scenarios "as they are", and the check neither runs nor writes them; P-035's script wrote both, `rate-limited` from the revoked token's error with its status changed to `(429)`, and `wrong-version` from the recorded version changed to 2.41.0. No written scenario is committed yet, so after the first run none exists. Readings: (a) the check writes them on a run where none is committed, from what it recorded, as P-035's script did, and never after; (b) part 2 writes them from the first run's files, as P-028 gives their form, and the check never does. Smallest fix: (a) the lines P-035's script had, behind one condition; (b) none. Parked: nothing of part 1 under (b); under (a), the check changes before the owner's first run. Answered by f8f7582 (P-043): (b), as built in part 2.
+2. **Tier 2: the order of `op item list`.** Item: `06` PRT-ENG-008, PRT-ENG-011 (P-043). In the owner's first run the two lists of "Sample Test", the agent's and the tool's, came in different orders (Janus, Hermes, Themis, Ceres; and Janus, Ceres, Hermes, Themis), and each item's file is numbered in its list's order. The check compares each file whole, its instants set aside, so a later run whose list comes in another order ends `changed` with no change of shape, and holds the release. Readings: (a) as P-043 gives it: such a run is `changed`, the lead reads it, and the new files come in a `test:` commit; (b) the check sets the lists' order aside too, comparing each list's entries and each item's file by the item's placeholder rather than by its place. Smallest fix: (a) none; (b) in the check's comparison, the list's entries in their identifiers' order and each item's file matched by its identifier. Parked: nothing.
 
 ## Checks
 
@@ -105,3 +128,4 @@ Before each release, and now for the first run:
 - Fast checks on every commit; before the push, the full gates by `run-gates.ps1 -Base origin/phase-07 -Head HEAD`.
 - The gate of record: the pipeline's `gates` run on the report's own commit, whose identifier and result the message naming the pull request gives.
 - The fix: the head of `phase-07-fix`, on `01f361e`, before the push the full gates by `run-gates.ps1 -Base origin/main -Head HEAD`, and the pipeline's `gates` run on its pull request.
+- Part 2: the report's own commit, the head of `phase-07-part2`, on `eaf51c7`; fast checks on every commit, the `linux` kind in the SDK's container, and before the push the full gates by `run-gates.ps1 -Base origin/main -Head HEAD`; the gate of record, the pipeline's `gates` run on its pull request.
