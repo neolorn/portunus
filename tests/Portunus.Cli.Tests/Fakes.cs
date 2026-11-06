@@ -41,7 +41,7 @@ internal static class Fakes
     internal static async Task WaitForCallAsync(string scenario)
     {
         Stopwatch waited = Stopwatch.StartNew();
-        while (!File.Exists(scenario + ".calls"))
+        while (Recording.Calls(scenario).Count == 0)
         {
             Assert.True(waited.Elapsed < TimeSpan.FromSeconds(30), "The fake was not called within the test's patience.");
             await Task.Delay(TimeSpan.FromMilliseconds(50), TestContext.Current.CancellationToken);
