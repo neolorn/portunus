@@ -107,6 +107,43 @@ public sealed class AgentStartTests : IDisposable
         AssertRefusal(line, "secrets.agent.opversion", ("found", string.Empty));
         Assert.Equal(["--version"], Assert.Single(op.Calls()));
     }
+
+    [Fact]
+    public async Task PRT_AGT_002_AC1_OpOfAnotherVersionStopsTheStartNamingTheVersionFound()
+    {
+        FakeOp op = FakeOp.Answering(_files, "wrong-version");
+        string missing = Path.Combine(_files.Folder, "missing");
+        _files.WriteConfiguration(("Source", "\"vault\""), ("OpPath", $"\"{op.Launcher}\""), ("TokenFile", $"\"{missing}\""));
+
+        (int exit, JsonElement line) = await RunAsync();
+
+        Assert.Equal(1, exit);
+        AssertRefusal(line, "secrets.agent.opversion", ("found", "2.41.0"));
+        Assert.Equal(["--version"], Assert.Single(op.Calls()));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public async Task PRT_AGT_002_AC1_TokenFileMissingOrEmptyStopsTheStartWithTokenUnavailableHavingRunOnlyOpVersion(string? content)
+    {
+        FakeOp op = FakeOp.Answering(_files, "sample-test");
+        string token = Path.Combine(_files.Folder, "token");
+        if (content is not null)
+        {
+            await File.WriteAllTextAsync(token, content, TestContext.Current.CancellationToken);
+        }
+
+        _files.WriteConfiguration(("Source", "\"vault\""), ("OpPath", $"\"{op.Launcher}\""), ("TokenFile", $"\"{token}\""));
+
+        (int exit, JsonElement line) = await RunAsync();
+
+        Assert.Equal(1, exit);
+        AssertRefusal(line, "secrets.agent.tokenunavailable");
+        Assert.Equal(["--version"], Assert.Single(op.Calls()));
+    }
+
     [Theory]
     [InlineData("go")]
     [InlineData("run")]
