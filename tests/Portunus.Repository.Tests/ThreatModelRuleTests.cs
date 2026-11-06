@@ -8,9 +8,8 @@ using Xunit;
 namespace Portunus.Repository.Tests;
 
 /// <summary>
-/// The reading of <c>08</c> PRT-THR-001 criterion 1, over a fixture table (P-041). The
-/// criterion's own test over the repository waits on the fake <c>op</c>'s recordings, which
-/// the tests of <c>01</c> PRT-AGT-003, PRT-AGT-004 and <c>02</c> PRT-PSH-002 need.
+/// The reading of <c>08</c> PRT-THR-001 criterion 1, over a fixture table (P-041); the
+/// criterion's own test over this repository is <see cref="ThreatModelTests"/>.
 /// </summary>
 [Trait("Category", "unit")]
 public sealed class ThreatModelRuleTests
