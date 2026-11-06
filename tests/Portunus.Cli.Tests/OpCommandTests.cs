@@ -34,7 +34,7 @@ public sealed class OpCommandTests : IDisposable
         await cancelled.CancelAsync();
 
         Assert.Equal(1, await running.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken));
-        Assert.False(IsRunning(op), "The op the tool started still runs.");
+        Assert.True(await EndsAsync(op), "The op the tool started still runs.");
     }
 
     public void Dispose()
@@ -42,16 +42,25 @@ public sealed class OpCommandTests : IDisposable
         Directory.Delete(_folder, recursive: true);
     }
 
-    private static bool IsRunning(int id)
+    /// <summary>
+    /// Whether the process <paramref name="id"/> ends within 10 seconds: a kill takes effect a
+    /// moment after it is sent, and the fake not killed waits 120.
+    /// </summary>
+    private static async Task<bool> EndsAsync(int id)
     {
         try
         {
             using Process process = Process.GetProcessById(id);
-            return !process.HasExited;
+            await process.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+            return true;
         }
         catch (ArgumentException)
         {
             // No process holds the identifier.
+            return true;
+        }
+        catch (TimeoutException)
+        {
             return false;
         }
     }
