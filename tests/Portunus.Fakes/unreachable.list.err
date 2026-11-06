@@ -1,0 +1,2 @@
+Using configuration at non-standard location "<repository>\\tmp\\check-real-op\\config"
+[ERROR] 2026/11/06 16:14:40 Get "/api/v2/account/keysets": dial tcp: lookup account1.1password.com: no such host

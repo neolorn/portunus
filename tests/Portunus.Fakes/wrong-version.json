@@ -1,0 +1,14 @@
+{
+  "recorded": false,
+  "commands": [
+    {
+      "arguments": [
+        "--version"
+      ],
+      "output": "wrong-version.out",
+      "error": null,
+      "exitCode": 0,
+      "pauseMilliseconds": 0
+    }
+  ]
+}

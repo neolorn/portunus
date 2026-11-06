@@ -12,12 +12,13 @@ namespace Portunus.Fakes;
 /// The fakes' executable (<c>06</c> PRT-ENG-001, PRT-ENG-008): it acts as <c>op</c> or as
 /// <c>ssh</c> by the name it is started under, with the scenario file its own environment
 /// variable <c>PORTUNUS_FAKES_SCENARIO</c> names, and keeps each call in the file beside the
-/// scenario, <c>&lt;scenario&gt;.calls</c>: its arguments and its environment's names, one JSON
-/// line each. As <c>op</c>, it answers from the scenario, which lists commands by their
-/// arguments, <c>--config</c>'s value left out, each with the files holding its standard output
-/// and standard error as recorded, its exit code, and a pause before it answers; a call that
-/// matches none exits 2. As <c>ssh</c>, it runs the command it is given after <c>--</c> and the
-/// destination on this machine, with its own standard streams, and exits as that command does.
+/// scenario, <c>&lt;scenario&gt;.calls</c>: its arguments, its environment's names and its
+/// process identifier, one JSON line each. As <c>op</c>, it answers from the scenario, which
+/// lists commands by their arguments, <c>--config</c>'s value left out, each with the files
+/// holding its standard output and standard error as recorded, its exit code, and a pause
+/// before it answers; a call that matches none exits 2. As <c>ssh</c>, it runs the command it
+/// is given after <c>--</c> and the destination on this machine, with its own standard
+/// streams, and exits as that command does.
 /// </summary>
 internal static class Program
 {
@@ -33,7 +34,7 @@ internal static class Program
             return 2;
         }
 
-        File.AppendAllLines(scenario + ".calls", [JsonSerializer.Serialize(new Call(args, [.. Environment.GetEnvironmentVariables().Keys.Cast<string>().Order(StringComparer.Ordinal)]), FakesJson.Default.Call)]);
+        File.AppendAllLines(scenario + ".calls", [JsonSerializer.Serialize(new Call(args, [.. Environment.GetEnvironmentVariables().Keys.Cast<string>().Order(StringComparer.Ordinal)], Environment.ProcessId), FakesJson.Default.Call)]);
         return role == "op" ? Op(args, scenario) : Ssh(args);
     }
 

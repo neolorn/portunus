@@ -19,10 +19,11 @@ internal sealed record Scenario(bool Recorded, IReadOnlyList<Command> Commands);
 /// <param name="PauseMilliseconds">How long it waits before it answers.</param>
 internal sealed record Command(IReadOnlyList<string> Arguments, string? Output, string? Error, int ExitCode, int PauseMilliseconds);
 
-/// <summary>One call the fake answered: its arguments and its environment's names.</summary>
+/// <summary>One call the fake answered: its arguments, its environment's names and its process.</summary>
 /// <param name="Arguments">The arguments.</param>
 /// <param name="Environment">The names of its environment's variables, in ordinal order.</param>
-internal sealed record Call(IReadOnlyList<string> Arguments, IReadOnlyList<string> Environment);
+/// <param name="ProcessId">The identifier of the fake's process, so a test tells whether it still runs.</param>
+internal sealed record Call(IReadOnlyList<string> Arguments, IReadOnlyList<string> Environment, int ProcessId);
 
 /// <summary>The fakes' source-generated JSON context (<c>06</c> PRT-ENG-004).</summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]

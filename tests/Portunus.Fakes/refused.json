@@ -1,0 +1,28 @@
+{
+  "recorded": true,
+  "commands": [
+    {
+      "arguments": [
+        "--version"
+      ],
+      "output": "version.out",
+      "error": null,
+      "exitCode": 0,
+      "pauseMilliseconds": 0
+    },
+    {
+      "arguments": [
+        "item",
+        "list",
+        "--vault",
+        "Sample Test",
+        "--format",
+        "json"
+      ],
+      "output": null,
+      "error": "refused.list.err",
+      "exitCode": 9,
+      "pauseMilliseconds": 0
+    }
+  ]
+}

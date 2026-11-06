@@ -26,15 +26,15 @@ public sealed class OpCommandTests : IDisposable
     {
         string scenario = Path.Combine(_folder, "scenario.json");
         await File.WriteAllTextAsync(scenario, """{"recorded":false,"commands":[{"arguments":["--version"],"output":null,"error":null,"exitCode":0,"pauseMilliseconds":120000}]}""", TestContext.Current.CancellationToken);
-        DateTime started = DateTime.Now.AddSeconds(-1);
         using CancellationTokenSource cancelled = new();
 
         Task<int> running = ToolCommand.MainAsync(["check", "--vault", "Sample Test"], Fakes.Environment(scenario), TextWriter.Null, TextWriter.Null, cancelled.Token);
         await Fakes.WaitForCallAsync(scenario);
+        int op = Assert.Single(Recording.Calls(scenario)).ProcessId;
         await cancelled.CancelAsync();
 
         Assert.Equal(1, await running.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken));
-        Assert.DoesNotContain(Process.GetProcessesByName("op"), process => Started(process) >= started);
+        Assert.True(await EndsAsync(op), "The op the tool started still runs.");
     }
 
     public void Dispose()
@@ -42,16 +42,26 @@ public sealed class OpCommandTests : IDisposable
         Directory.Delete(_folder, recursive: true);
     }
 
-    private static DateTime Started(Process process)
+    /// <summary>
+    /// Whether the process <paramref name="id"/> ends within 10 seconds: a kill takes effect a
+    /// moment after it is sent, and the fake not killed waits 120.
+    /// </summary>
+    private static async Task<bool> EndsAsync(int id)
     {
         try
         {
-            return process.HasExited ? DateTime.MinValue : process.StartTime;
+            using Process process = Process.GetProcessById(id);
+            await process.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+            return true;
         }
-        catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
+        catch (ArgumentException)
         {
-            // The process ended while it was read.
-            return DateTime.MinValue;
+            // No process holds the identifier.
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            return false;
         }
     }
 }

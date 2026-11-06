@@ -1,0 +1,92 @@
+{
+  "recorded": true,
+  "commands": [
+    {
+      "arguments": [
+        "--version"
+      ],
+      "output": "version.out",
+      "error": null,
+      "exitCode": 0,
+      "pauseMilliseconds": 0
+    },
+    {
+      "arguments": [
+        "item",
+        "list",
+        "--vault",
+        "Sample Test",
+        "--format",
+        "json"
+      ],
+      "output": "sample-test-tool.list.out",
+      "error": null,
+      "exitCode": 0,
+      "pauseMilliseconds": 0
+    },
+    {
+      "arguments": [
+        "item",
+        "get",
+        "xxxxxxxxxxxxxxxxxxxxxxaaaj",
+        "--vault",
+        "xxxxxxxxxxxxxxxxxxxxxxaaag",
+        "--format",
+        "json",
+        "--reveal"
+      ],
+      "output": "sample-test-tool.item-1.out",
+      "error": null,
+      "exitCode": 0,
+      "pauseMilliseconds": 0
+    },
+    {
+      "arguments": [
+        "item",
+        "get",
+        "xxxxxxxxxxxxxxxxxxxxxxaaak",
+        "--vault",
+        "xxxxxxxxxxxxxxxxxxxxxxaaag",
+        "--format",
+        "json",
+        "--reveal"
+      ],
+      "output": "sample-test-tool.item-2.out",
+      "error": null,
+      "exitCode": 0,
+      "pauseMilliseconds": 0
+    },
+    {
+      "arguments": [
+        "item",
+        "get",
+        "xxxxxxxxxxxxxxxxxxxxxxaaar",
+        "--vault",
+        "xxxxxxxxxxxxxxxxxxxxxxaaag",
+        "--format",
+        "json",
+        "--reveal"
+      ],
+      "output": "sample-test-tool.item-3.out",
+      "error": null,
+      "exitCode": 0,
+      "pauseMilliseconds": 0
+    },
+    {
+      "arguments": [
+        "item",
+        "get",
+        "xxxxxxxxxxxxxxxxxxxxxxaaay",
+        "--vault",
+        "xxxxxxxxxxxxxxxxxxxxxxaaag",
+        "--format",
+        "json",
+        "--reveal"
+      ],
+      "output": "sample-test-tool.item-4.out",
+      "error": null,
+      "exitCode": 0,
+      "pauseMilliseconds": 0
+    }
+  ]
+}

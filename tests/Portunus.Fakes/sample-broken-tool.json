@@ -1,0 +1,60 @@
+{
+  "recorded": true,
+  "commands": [
+    {
+      "arguments": [
+        "--version"
+      ],
+      "output": "version.out",
+      "error": null,
+      "exitCode": 0,
+      "pauseMilliseconds": 0
+    },
+    {
+      "arguments": [
+        "item",
+        "list",
+        "--vault",
+        "Sample Broken",
+        "--format",
+        "json"
+      ],
+      "output": "sample-broken-tool.list.out",
+      "error": null,
+      "exitCode": 0,
+      "pauseMilliseconds": 0
+    },
+    {
+      "arguments": [
+        "item",
+        "get",
+        "xxxxxxxxxxxxxxxxxxxxxxaaat",
+        "--vault",
+        "xxxxxxxxxxxxxxxxxxxxxxaaap",
+        "--format",
+        "json",
+        "--reveal"
+      ],
+      "output": "sample-broken-tool.item-1.out",
+      "error": null,
+      "exitCode": 0,
+      "pauseMilliseconds": 0
+    },
+    {
+      "arguments": [
+        "item",
+        "get",
+        "xxxxxxxxxxxxxxxxxxxxxxaaaz",
+        "--vault",
+        "xxxxxxxxxxxxxxxxxxxxxxaaap",
+        "--format",
+        "json",
+        "--reveal"
+      ],
+      "output": "sample-broken-tool.item-2.out",
+      "error": null,
+      "exitCode": 0,
+      "pauseMilliseconds": 0
+    }
+  ]
+}
