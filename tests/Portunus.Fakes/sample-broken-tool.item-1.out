@@ -1,6 +1,6 @@
 {
-  "id": "xxxxxxxxxxxxxxxxxxxxxxaaaz",
-  "title": "Hermes",
+  "id": "xxxxxxxxxxxxxxxxxxxxxxaaat",
+  "title": "Themis",
   "version": 1,
   "vault": {
     "id": "xxxxxxxxxxxxxxxxxxxxxxaaap",
@@ -8,11 +8,12 @@
   },
   "category": "SECURE_NOTE",
   "last_edited_by": "XXXXXXXXXXXXXXXXXXXXXXAAAU",
-  "created_at": "2026-11-06T13:34:56Z",
-  "updated_at": "2026-11-06T13:34:56Z",
+  "created_at": "2026-11-06T13:34:53Z",
+  "updated_at": "2026-11-06T13:34:53Z",
+  "additional_information": "Sample note for Themis.",
   "sections": [
     {
-      "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaaq"
+      "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaaw"
     }
   ],
   "fields": [
@@ -21,17 +22,28 @@
       "type": "STRING",
       "purpose": "NOTES",
       "label": "notesPlain",
-      "reference": "op://Sample Broken/Hermes/notesPlain"
+      "value": "Sample note for Themis.",
+      "reference": "op://Sample Broken/Themis/notesPlain"
     },
     {
-      "id": "xxxxxxxxxxxxxxxxxxxxxxaaan",
+      "id": "xxxxxxxxxxxxxxxxxxxxxxaaao",
       "section": {
-        "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaaq"
+        "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaaw"
       },
       "type": "STRING",
-      "label": "token",
-      "value": "sample-value-9",
-      "reference": "op://Sample Broken/Hermes/Section_xxxxxxxxxxxxxxxxxxxxxxaaaq/token"
+      "label": "connection",
+      "value": "sample-value-7",
+      "reference": "op://Sample Broken/Themis/Section_xxxxxxxxxxxxxxxxxxxxxxaaaw/connection"
+    },
+    {
+      "id": "xxxxxxxxxxxxxxxxxxxxxxaaaf",
+      "section": {
+        "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaaw"
+      },
+      "type": "STRING",
+      "label": "bad label",
+      "value": "sample-value-8",
+      "reference": "op://Sample Broken/Themis/Section_xxxxxxxxxxxxxxxxxxxxxxaaaw/bad label"
     }
   ]
 }

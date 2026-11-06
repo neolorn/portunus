@@ -28,7 +28,7 @@
       "arguments": [
         "item",
         "get",
-        "xxxxxxxxxxxxxxxxxxxxxxaaaz",
+        "xxxxxxxxxxxxxxxxxxxxxxaaat",
         "--vault",
         "xxxxxxxxxxxxxxxxxxxxxxaaap",
         "--format",
@@ -44,7 +44,7 @@
       "arguments": [
         "item",
         "get",
-        "xxxxxxxxxxxxxxxxxxxxxxaaat",
+        "xxxxxxxxxxxxxxxxxxxxxxaaaz",
         "--vault",
         "xxxxxxxxxxxxxxxxxxxxxxaaap",
         "--format",

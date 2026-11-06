@@ -1,6 +1,6 @@
 {
-  "id": "xxxxxxxxxxxxxxxxxxxxxxaaar",
-  "title": "Ceres",
+  "id": "xxxxxxxxxxxxxxxxxxxxxxaaak",
+  "title": "Hermes",
   "version": 1,
   "vault": {
     "id": "xxxxxxxxxxxxxxxxxxxxxxaaag",
@@ -8,11 +8,12 @@
   },
   "category": "SECURE_NOTE",
   "last_edited_by": "XXXXXXXXXXXXXXXXXXXXXXAAAU",
-  "created_at": "2026-11-06T13:34:49Z",
-  "updated_at": "2026-11-06T13:34:49Z",
+  "created_at": "2026-11-06T13:34:45Z",
+  "updated_at": "2026-11-06T13:34:45Z",
+  "additional_information": "Sample note for Hermes.",
   "sections": [
     {
-      "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaal"
+      "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaai"
     }
   ],
   "fields": [
@@ -21,17 +22,18 @@
       "type": "STRING",
       "purpose": "NOTES",
       "label": "notesPlain",
-      "reference": "op://Sample Test/Ceres/notesPlain"
+      "value": "Sample note for Hermes.",
+      "reference": "op://Sample Test/Hermes/notesPlain"
     },
     {
-      "id": "xxxxxxxxxxxxxxxxxxxxxxaaab",
+      "id": "xxxxxxxxxxxxxxxxxxxxxxaaax",
       "section": {
-        "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaal"
+        "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaai"
       },
       "type": "STRING",
-      "label": "password",
-      "value": "sample-value-6",
-      "reference": "op://Sample Test/Ceres/Section_xxxxxxxxxxxxxxxxxxxxxxaaal/password"
+      "label": "token",
+      "value": "sample-value-5",
+      "reference": "op://Sample Test/Hermes/Section_xxxxxxxxxxxxxxxxxxxxxxaaai/token"
     }
   ]
 }

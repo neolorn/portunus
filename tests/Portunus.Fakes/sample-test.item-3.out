@@ -1,6 +1,6 @@
 {
-  "id": "xxxxxxxxxxxxxxxxxxxxxxaaaj",
-  "title": "Themis",
+  "id": "xxxxxxxxxxxxxxxxxxxxxxaaar",
+  "title": "Ceres",
   "version": 1,
   "vault": {
     "id": "xxxxxxxxxxxxxxxxxxxxxxaaag",
@@ -8,12 +8,11 @@
   },
   "category": "SECURE_NOTE",
   "last_edited_by": "XXXXXXXXXXXXXXXXXXXXXXAAAU",
-  "created_at": "2026-11-06T13:34:36Z",
-  "updated_at": "2026-11-06T13:34:36Z",
-  "additional_information": "Sample note for Themis.",
+  "created_at": "2026-11-06T13:34:49Z",
+  "updated_at": "2026-11-06T13:34:49Z",
   "sections": [
     {
-      "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaav"
+      "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaal"
     }
   ],
   "fields": [
@@ -22,18 +21,17 @@
       "type": "STRING",
       "purpose": "NOTES",
       "label": "notesPlain",
-      "value": "Sample note for Themis.",
-      "reference": "op://Sample Test/Themis/notesPlain"
+      "reference": "op://Sample Test/Ceres/notesPlain"
     },
     {
-      "id": "xxxxxxxxxxxxxxxxxxxxxxaaac",
+      "id": "xxxxxxxxxxxxxxxxxxxxxxaaab",
       "section": {
-        "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaav"
+        "id": "Section_xxxxxxxxxxxxxxxxxxxxxxaaal"
       },
       "type": "STRING",
-      "label": "connection",
-      "value": "sample-value-1",
-      "reference": "op://Sample Test/Themis/Section_xxxxxxxxxxxxxxxxxxxxxxaaav/connection"
+      "label": "password",
+      "value": "sample-value-6",
+      "reference": "op://Sample Test/Ceres/Section_xxxxxxxxxxxxxxxxxxxxxxaaal/password"
     }
   ]
 }
